@@ -14,9 +14,9 @@ AROHA is a three-tier, offline-first logistics platform designed for India's Ant
 ## Core Mathematical Pipeline
 Our system features three integrated C++ modules operating natively on-station:
 
-*   **Demand Forecasting:** Classifies demand patterns and applies Simple Exponential Smoothing (SES) for stable items or SBA/Croston methods for intermittent demand[cite: 1]. It also adjusts for planned expedition loads.
+*   **Demand Forecasting:** Classifies demand patterns and applies Simple Exponential Smoothing (SES) for stable items or SBA/Croston methods for intermittent demand. It also adjusts for planned expedition loads.
 *   **Multi-Factor Criticality Scoring:** Replaces standard "days-of-supply" with a 5-factor normalized risk score combining item essentiality, urgency, lead-time risk, expedition impact, and forecast uncertainty.
-*   **Cargo Optimization (Bounded Knapsack):** Maximizes operational risk reduction while strictly adhering to physical payload constraints[cite: 1]. It uses dynamic programming to select optimal shipment quantities.
+*   **Cargo Optimization (Bounded Knapsack):** Maximizes operational risk reduction while strictly adhering to physical payload constraints. It uses dynamic programming to select optimal shipment quantities.
 
 ## Three-Tier Architecture
 AROHA is built to survive network isolation, seamlessly syncing when satellite windows open.
