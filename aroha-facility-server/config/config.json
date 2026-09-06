@@ -31,19 +31,9 @@
     "client_max_body_size": "32M",
     "client_max_memory_body_size": "4M",
     "log": {
-      "log_path": "./logs",
+      "log_path": "",
       "logfile_base_name": "facility_server",
       "log_level": "DEBUG"
     }
-  },
-  "plugins": [
-    {
-      "name": "SqlitePlugin",
-      "dependencies": [],
-      "config": {
-        "db_path": "aroha_facility.db",
-        "migrations_dir": "db/migrations"
-      }
-    }
-  ]
+  }
 }
