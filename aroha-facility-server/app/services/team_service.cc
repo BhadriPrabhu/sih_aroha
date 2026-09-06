@@ -17,8 +17,40 @@ std::string TeamService::generateUuid(const std::string &prefix)
     return ss.str();
 }
 
+static void ensureTeamTablesExist()
+{
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        dbClient->execSqlSync(
+            "CREATE TABLE IF NOT EXISTS team_details ("
+            "id TEXT PRIMARY KEY, "
+            "teamid TEXT NOT NULL UNIQUE, "
+            "teamname TEXT NOT NULL, "
+            "active_status TEXT NOT NULL DEFAULT 'ACTIVE', "
+            "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
+            "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
+        );
+        dbClient->execSqlSync(
+            "CREATE TABLE IF NOT EXISTS member_details ("
+            "id TEXT PRIMARY KEY, "
+            "teamid TEXT NOT NULL REFERENCES team_details(teamid) ON DELETE CASCADE, "
+            "name TEXT NOT NULL, "
+            "role TEXT NOT NULL, "
+            "activity_status TEXT NOT NULL DEFAULT 'ON_STATION', "
+            "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
+            "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
+        );
+    }
+    catch (const std::exception &e)
+    {
+        LOG_ERROR << "Error ensuring team tables exist: " << e.what();
+    }
+}
+
 Json::Value TeamService::getAllTeams()
 {
+    ensureTeamTablesExist();
     Json::Value response;
     try
     {
@@ -51,6 +83,7 @@ Json::Value TeamService::getAllTeams()
 
 Json::Value TeamService::createTeam(const CreateTeamDto &dto)
 {
+    ensureTeamTablesExist();
     Json::Value response;
     try
     {
@@ -78,6 +111,7 @@ Json::Value TeamService::createTeam(const CreateTeamDto &dto)
 
 Json::Value TeamService::getTeamById(const std::string &teamid)
 {
+    ensureTeamTablesExist();
     Json::Value response;
     try
     {
@@ -126,6 +160,7 @@ Json::Value TeamService::getTeamById(const std::string &teamid)
 
 Json::Value TeamService::getTeamMembers(const std::string &teamid)
 {
+    ensureTeamTablesExist();
     Json::Value response;
     try
     {
@@ -159,6 +194,7 @@ Json::Value TeamService::getTeamMembers(const std::string &teamid)
 
 Json::Value TeamService::addTeamMember(const CreateMemberDto &dto)
 {
+    ensureTeamTablesExist();
     Json::Value response;
     try
     {
@@ -187,6 +223,7 @@ Json::Value TeamService::addTeamMember(const CreateMemberDto &dto)
 
 Json::Value TeamService::getAllMembers(const std::string &activityStatus)
 {
+    ensureTeamTablesExist();
     Json::Value response;
     try
     {

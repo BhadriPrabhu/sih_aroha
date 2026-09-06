@@ -18,8 +18,43 @@ std::string StockService::generateUuid()
     return ss.str();
 }
 
+static void ensureStockTablesExist()
+{
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        dbClient->execSqlSync(
+            "CREATE TABLE IF NOT EXISTS stocks_master ("
+            "id TEXT PRIMARY KEY, "
+            "station_id TEXT NOT NULL DEFAULT 'stn-maitri', "
+            "category TEXT NOT NULL, "
+            "name TEXT NOT NULL, "
+            "stock_available REAL NOT NULL DEFAULT 0, "
+            "stock_consumed REAL NOT NULL DEFAULT 0, "
+            "present_stock REAL NOT NULL DEFAULT 0, "
+            "criticality_rate REAL NOT NULL DEFAULT 0.5, "
+            "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
+            "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
+        );
+        dbClient->execSqlSync(
+            "CREATE TABLE IF NOT EXISTS stock_logs ("
+            "id TEXT PRIMARY KEY, "
+            "stock_id TEXT NOT NULL REFERENCES stocks_master(id) ON DELETE CASCADE, "
+            "action TEXT NOT NULL, "
+            "quantity REAL NOT NULL, "
+            "notes TEXT, "
+            "logged_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
+        );
+    }
+    catch (const std::exception &e)
+    {
+        LOG_ERROR << "Error ensuring stock tables exist: " << e.what();
+    }
+}
+
 Json::Value StockService::createStock(const CreateStockDto &dto)
 {
+    ensureStockTablesExist();
     Json::Value response;
     try
     {
@@ -54,6 +89,7 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
 
 Json::Value StockService::logStock(const LogStockDto &dto)
 {
+    ensureStockTablesExist();
     Json::Value response;
     try
     {
@@ -124,6 +160,7 @@ Json::Value StockService::logStock(const LogStockDto &dto)
 
 Json::Value StockService::getAllStocks()
 {
+    ensureStockTablesExist();
     Json::Value response;
     try
     {
@@ -159,6 +196,7 @@ Json::Value StockService::getAllStocks()
 
 Json::Value StockService::getStockById(const std::string &id)
 {
+    ensureStockTablesExist();
     Json::Value response;
     try
     {
@@ -210,6 +248,7 @@ Json::Value StockService::getStockById(const std::string &id)
 
 Json::Value StockService::getFilteredStocks(const std::string &category, const std::string &stationId)
 {
+    ensureStockTablesExist();
     Json::Value response;
     try
     {
@@ -257,6 +296,7 @@ Json::Value StockService::getStocksByCategory(const std::string &category)
 
 Json::Value StockService::getAllCategories(const std::string &stationId)
 {
+    ensureStockTablesExist();
     Json::Value response;
     try
     {
