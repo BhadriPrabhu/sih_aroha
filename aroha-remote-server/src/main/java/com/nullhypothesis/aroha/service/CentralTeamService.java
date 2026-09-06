@@ -9,7 +9,9 @@ import com.nullhypothesis.aroha.repository.TeamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +46,60 @@ public class CentralTeamService {
         }
 
         return entities.stream().map(this::mapMemberToDto).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public TeamDto createTeam(TeamDto dto) {
+        String stationId = (dto.getStationId() != null && !dto.getStationId().isEmpty())
+                ? dto.getStationId()
+                : "STATION-MAITRI";
+
+        String teamId = (dto.getTeamId() != null && !dto.getTeamId().isEmpty())
+                ? dto.getTeamId()
+                : "TEAM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        TeamEntity entity = teamRepository.findByStationIdAndTeamId(stationId, teamId)
+                .orElse(TeamEntity.builder()
+                        .stationId(stationId)
+                        .teamId(teamId)
+                        .build());
+
+        entity.setTeamName(dto.getTeamName() != null ? dto.getTeamName() : "New Team");
+        entity.setActiveStatus(dto.getActiveStatus() != null ? dto.getActiveStatus() : "ACTIVE");
+        entity.setCreatedAt(LocalDateTime.now());
+
+        TeamEntity saved = teamRepository.save(entity);
+        return mapTeamToDto(saved);
+    }
+
+    @Transactional
+    public MemberDto addMember(MemberDto dto) {
+        String stationId = (dto.getStationId() != null && !dto.getStationId().isEmpty())
+                ? dto.getStationId()
+                : "STATION-MAITRI";
+
+        String memberId = (dto.getMemberId() != null && !dto.getMemberId().isEmpty())
+                ? dto.getMemberId()
+                : "MEM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        String teamId = (dto.getTeamId() != null && !dto.getTeamId().isEmpty())
+                ? dto.getTeamId()
+                : "UNASSIGNED";
+
+        MemberEntity entity = memberRepository.findByStationIdAndMemberId(stationId, memberId)
+                .orElse(MemberEntity.builder()
+                        .stationId(stationId)
+                        .memberId(memberId)
+                        .build());
+
+        entity.setTeamId(teamId);
+        entity.setFullName(dto.getFullName() != null ? dto.getFullName() : "New Member");
+        entity.setRole(dto.getRole() != null ? dto.getRole() : "OPERATIVE");
+        entity.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        MemberEntity saved = memberRepository.save(entity);
+        return mapMemberToDto(saved);
     }
 
     private TeamDto mapTeamToDto(TeamEntity entity) {

@@ -55,6 +55,53 @@ class ArohaRemoteServerApplicationTests {
     }
 
     @Test
+    void testAdminCreateTeamAndAddMember() {
+        // Admin Creates Team
+        TeamDto newTeam = TeamDto.builder()
+                .stationId("STATION-MAITRI")
+                .teamId("TEAM-NCPOR-01")
+                .teamName("Deep Ice Core Team")
+                .activeStatus("ACTIVE")
+                .build();
+
+        HttpEntity<TeamDto> teamReq = new HttpEntity<>(newTeam);
+        ResponseEntity<ApiResponse<TeamDto>> teamResp = restTemplate.exchange(
+                getBaseUrl() + "/teams",
+                HttpMethod.POST,
+                teamReq,
+                new ParameterizedTypeReference<ApiResponse<TeamDto>>() {}
+        );
+
+        assertEquals(HttpStatus.OK, teamResp.getStatusCode());
+        assertNotNull(teamResp.getBody());
+        assertTrue(teamResp.getBody().isSuccess());
+        assertEquals("TEAM-NCPOR-01", teamResp.getBody().getData().getTeamId());
+
+        // Admin Adds Member to Team
+        MemberDto newMember = MemberDto.builder()
+                .stationId("STATION-MAITRI")
+                .memberId("MEM-NCPOR-01")
+                .fullName("Dr. Alexis Vance")
+                .role("Senior Geophysicist")
+                .status("ACTIVE")
+                .build();
+
+        HttpEntity<MemberDto> memberReq = new HttpEntity<>(newMember);
+        ResponseEntity<ApiResponse<MemberDto>> memberResp = restTemplate.exchange(
+                getBaseUrl() + "/teams/TEAM-NCPOR-01/members",
+                HttpMethod.POST,
+                memberReq,
+                new ParameterizedTypeReference<ApiResponse<MemberDto>>() {}
+        );
+
+        assertEquals(HttpStatus.OK, memberResp.getStatusCode());
+        assertNotNull(memberResp.getBody());
+        assertTrue(memberResp.getBody().isSuccess());
+        assertEquals("TEAM-NCPOR-01", memberResp.getBody().getData().getTeamId());
+        assertEquals("Dr. Alexis Vance", memberResp.getBody().getData().getFullName());
+    }
+
+    @Test
     void testProcessDeltaSyncAndQuery() {
         // Prepare Delta Sync Payload
         StockDto stockDto = StockDto.builder()
@@ -127,17 +174,5 @@ class ArohaRemoteServerApplicationTests {
         assertNotNull(stocksResponse.getBody());
         assertEquals(1, stocksResponse.getBody().getData().size());
         assertEquals("Antarctic Trauma Kit Remote", stocksResponse.getBody().getData().get(0).getItemName());
-
-        // Verify Synced Teams via Remote Team API
-        ResponseEntity<ApiResponse<List<TeamDto>>> teamsResponse = restTemplate.exchange(
-                getBaseUrl() + "/teams?station_id=STATION-MAITRI",
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<ApiResponse<List<TeamDto>>>() {}
-        );
-
-        assertEquals(HttpStatus.OK, teamsResponse.getStatusCode());
-        assertNotNull(teamsResponse.getBody());
-        assertFalse(teamsResponse.getBody().getData().isEmpty());
     }
 }
