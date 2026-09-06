@@ -5,6 +5,7 @@
 
 struct CreateStockDto
 {
+    std::string station_id;
     std::string category;
     std::string name;
     double stock_available{0.0};
@@ -13,6 +14,7 @@ struct CreateStockDto
     static CreateStockDto fromJson(const Json::Value &json)
     {
         CreateStockDto dto;
+        dto.station_id = json.get("station_id", "stn-maitri").asString();
         dto.category = json.get("category", "").asString();
         dto.name = json.get("name", "").asString();
         dto.stock_available = json.get("stock_available", 0.0).asDouble();

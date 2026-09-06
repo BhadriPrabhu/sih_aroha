@@ -41,8 +41,8 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
     double initialConsumed = 0.0;
     double presentStock = initialAvailable - initialConsumed;
 
-    std::string sql = "INSERT INTO stocks_master (id, category, name, stock_available, stock_consumed, present_stock, criticality_rate) "
-                      "VALUES (?, ?, ?, ?, ?, ?, ?);";
+    std::string sql = "INSERT INTO stocks_master (id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 
     sqlite3_stmt *stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
@@ -53,18 +53,20 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
     }
 
     sqlite3_bind_text(stmt, 1, stockId.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, dto.category.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, dto.name.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_double(stmt, 4, initialAvailable);
-    sqlite3_bind_double(stmt, 5, initialConsumed);
-    sqlite3_bind_double(stmt, 6, presentStock);
-    sqlite3_bind_double(stmt, 7, dto.criticality_rate);
+    sqlite3_bind_text(stmt, 2, dto.station_id.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, dto.category.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 4, dto.name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 5, initialAvailable);
+    sqlite3_bind_double(stmt, 6, initialConsumed);
+    sqlite3_bind_double(stmt, 7, presentStock);
+    sqlite3_bind_double(stmt, 8, dto.criticality_rate);
 
     if (sqlite3_step(stmt) == SQLITE_DONE)
     {
         response["success"] = true;
         response["message"] = "Stock record created successfully";
         response["stock"]["id"] = stockId;
+        response["stock"]["station_id"] = dto.station_id;
         response["stock"]["category"] = dto.category;
         response["stock"]["name"] = dto.name;
         response["stock"]["stock_available"] = initialAvailable;
@@ -207,7 +209,7 @@ Json::Value StockService::getAllStocks()
         return response;
     }
 
-    std::string sql = "SELECT id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, updated_at FROM stocks_master ORDER BY name ASC;";
+    std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, updated_at FROM stocks_master ORDER BY name ASC;";
     sqlite3_stmt *stmt = nullptr;
 
     if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
@@ -216,13 +218,14 @@ Json::Value StockService::getAllStocks()
         {
             Json::Value item;
             item["id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-            item["category"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-            item["name"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-            item["stock_available"] = sqlite3_column_double(stmt, 3);
-            item["stock_consumed"] = sqlite3_column_double(stmt, 4);
-            item["present_stock"] = sqlite3_column_double(stmt, 5);
-            item["criticality_rate"] = sqlite3_column_double(stmt, 6);
-            item["updated_at"] = sqlite3_column_text(stmt, 7) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 7)) : "";
+            item["station_id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+            item["category"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+            item["name"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
+            item["stock_available"] = sqlite3_column_double(stmt, 4);
+            item["stock_consumed"] = sqlite3_column_double(stmt, 5);
+            item["present_stock"] = sqlite3_column_double(stmt, 6);
+            item["criticality_rate"] = sqlite3_column_double(stmt, 7);
+            item["updated_at"] = sqlite3_column_text(stmt, 8) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 8)) : "";
             list.append(item);
         }
         sqlite3_finalize(stmt);
@@ -248,7 +251,7 @@ Json::Value StockService::getStockById(const std::string &id)
         return response;
     }
 
-    std::string sql = "SELECT id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, created_at, updated_at FROM stocks_master WHERE id = ?;";
+    std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, created_at, updated_at FROM stocks_master WHERE id = ?;";
     sqlite3_stmt *stmt = nullptr;
 
     if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
@@ -264,14 +267,15 @@ Json::Value StockService::getStockById(const std::string &id)
     {
         Json::Value item;
         item["id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-        item["category"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-        item["name"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-        item["stock_available"] = sqlite3_column_double(stmt, 3);
-        item["stock_consumed"] = sqlite3_column_double(stmt, 4);
-        item["present_stock"] = sqlite3_column_double(stmt, 5);
-        item["criticality_rate"] = sqlite3_column_double(stmt, 6);
-        item["created_at"] = sqlite3_column_text(stmt, 7) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 7)) : "";
-        item["updated_at"] = sqlite3_column_text(stmt, 8) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 8)) : "";
+        item["station_id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+        item["category"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+        item["name"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
+        item["stock_available"] = sqlite3_column_double(stmt, 4);
+        item["stock_consumed"] = sqlite3_column_double(stmt, 5);
+        item["present_stock"] = sqlite3_column_double(stmt, 6);
+        item["criticality_rate"] = sqlite3_column_double(stmt, 7);
+        item["created_at"] = sqlite3_column_text(stmt, 8) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 8)) : "";
+        item["updated_at"] = sqlite3_column_text(stmt, 9) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 9)) : "";
 
         // Fetch audit logs
         Json::Value logs(Json::arrayValue);
