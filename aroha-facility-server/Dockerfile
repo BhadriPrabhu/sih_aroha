@@ -17,11 +17,11 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and build Drogon framework
-RUN git clone --recursive https://github.com/drogonframework/drogon.git /tmp/drogon && \
+# Clone and build Drogon framework v1.9.5
+RUN git clone --depth 1 -b v1.9.5 --recursive https://github.com/drogonframework/drogon.git /tmp/drogon && \
     cd /tmp/drogon && \
     mkdir build && cd build && \
-    cmake .. -BUILD_DROGON_CLI=OFF && \
+    cmake .. -DBUILD_DROGON_CLI=OFF -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release && \
     make -j$(nproc) && \
     make install && \
     ldconfig && \
