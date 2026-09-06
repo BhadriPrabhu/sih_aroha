@@ -1,35 +1,31 @@
 #pragma once
 
 #include "dto/team_dto.h"
-#include "models/TeamDetails.h"
-#include "models/MemberDetails.h"
-#include <drogon/orm/Mapper.h>
+#include <drogon/drogon.h>
 #include <json/json.h>
 #include <string>
-
-using namespace drogon_model::aroha_facility;
 
 class TeamService
 {
 public:
     explicit TeamService() = default;
 
-    /// Get all teams via Drogon ORM
+    /// Get all teams via Drogon DB Client
     Json::Value getAllTeams();
 
-    /// Create a new team via Drogon ORM
+    /// Create a new team via Drogon DB Client
     Json::Value createTeam(const CreateTeamDto &dto);
 
-    /// Get team details by teamid with members list via Drogon ORM
+    /// Get team details by teamid with members list via Drogon DB Client
     Json::Value getTeamById(const std::string &teamid);
 
-    /// Get member list of a specific teamid via Drogon ORM
+    /// Get member list of a specific teamid via Drogon DB Client
     Json::Value getTeamMembers(const std::string &teamid);
 
-    /// Add a new member to a team via Drogon ORM
+    /// Add a new member to a team via Drogon DB Client
     Json::Value addTeamMember(const CreateMemberDto &dto);
 
-    /// Get all members across teams via Drogon ORM (optional filter by activity_status)
+    /// Get all members across teams via Drogon DB Client (optional filter by activity_status)
     Json::Value getAllMembers(const std::string &activityStatus = "");
 
 private:

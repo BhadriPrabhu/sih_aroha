@@ -1,11 +1,8 @@
 #include "stock_service.h"
 #include <drogon/drogon.h>
-#include <drogon/orm/Criteria.h>
 #include <random>
 #include <sstream>
-
-using namespace drogon::orm;
-using namespace drogon_model::aroha_facility;
+#include <set>
 
 std::string StockService::generateUuid()
 {
@@ -27,28 +24,26 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        Mapper<StocksMaster> mapper(dbClient);
-
-        StocksMaster stock;
         std::string stockId = generateUuid();
         double initialAvailable = dto.stock_available;
         double initialConsumed = 0.0;
         double presentStock = initialAvailable - initialConsumed;
 
-        stock.setId(stockId);
-        stock.setStationId(dto.station_id);
-        stock.setCategory(dto.category);
-        stock.setName(dto.name);
-        stock.setStockAvailable(initialAvailable);
-        stock.setStockConsumed(initialConsumed);
-        stock.setPresentStock(presentStock);
-        stock.setCriticalityRate(dto.criticality_rate);
-
-        mapper.insert(stock);
+        dbClient->execSqlSync(
+            "INSERT INTO stocks_master (id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
+            stockId, dto.station_id, dto.category, dto.name, initialAvailable, initialConsumed, presentStock, dto.criticality_rate
+        );
 
         response["success"] = true;
-        response["message"] = "Stock record created successfully via Drogon ORM";
-        response["stock"] = stock.toJson();
+        response["message"] = "Stock record created successfully";
+        response["stock"]["id"] = stockId;
+        response["stock"]["station_id"] = dto.station_id;
+        response["stock"]["category"] = dto.category;
+        response["stock"]["name"] = dto.name;
+        response["stock"]["stock_available"] = initialAvailable;
+        response["stock"]["stock_consumed"] = initialConsumed;
+        response["stock"]["present_stock"] = presentStock;
+        response["stock"]["criticality_rate"] = dto.criticality_rate;
     }
     catch (const std::exception &e)
     {
@@ -63,13 +58,19 @@ Json::Value StockService::logStock(const LogStockDto &dto)
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        Mapper<StocksMaster> masterMapper(dbClient);
-        Mapper<StockLogs> logMapper(dbClient);
 
-        StocksMaster stock = masterMapper.findByPrimaryKey(dto.stock_id);
+        auto result = dbClient->execSqlSync("SELECT stock_available, stock_consumed FROM stocks_master WHERE id = ?;", dto.stock_id);
+        if (result.empty())
+        {
+            response["error"] = "Stock item not found";
+            return response;
+        }
 
-        double newAvailable = stock.getValueOfStockAvailable();
-        double newConsumed = stock.getValueOfStockConsumed();
+        double currentAvailable = result[0]["stock_available"].as<double>();
+        double currentConsumed = result[0]["stock_consumed"].as<double>();
+
+        double newAvailable = currentAvailable;
+        double newConsumed = currentConsumed;
 
         if (dto.action == "ADDED")
         {
@@ -86,32 +87,33 @@ Json::Value StockService::logStock(const LogStockDto &dto)
         }
 
         double newPresent = newAvailable - newConsumed;
-        stock.setStockAvailable(newAvailable);
-        stock.setStockConsumed(newConsumed);
-        stock.setPresentStock(newPresent);
 
-        masterMapper.update(stock);
+        dbClient->execSqlSync(
+            "UPDATE stocks_master SET stock_available = ?, stock_consumed = ?, present_stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;",
+            newAvailable, newConsumed, newPresent, dto.stock_id
+        );
 
-        // Insert audit log
-        StockLogs logEntry;
         static std::random_device rd;
         static std::mt19937 gen(rd());
         static std::uniform_int_distribution<> dis(0, 15);
         std::stringstream ss;
         ss << "log-";
         for (int i = 0; i < 8; ++i) ss << std::hex << dis(gen);
+        std::string logId = ss.str();
 
-        logEntry.setId(ss.str());
-        logEntry.setStockId(dto.stock_id);
-        logEntry.setAction(dto.action);
-        logEntry.setQuantity(dto.quantity);
-        logEntry.setNotes(dto.notes);
-
-        logMapper.insert(logEntry);
+        dbClient->execSqlSync(
+            "INSERT INTO stock_logs (id, stock_id, action, quantity, notes) VALUES (?, ?, ?, ?, ?);",
+            logId, dto.stock_id, dto.action, dto.quantity, dto.notes
+        );
 
         response["success"] = true;
-        response["message"] = "Stock logged successfully via Drogon ORM (" + dto.action + ")";
-        response["stock"] = stock.toJson();
+        response["message"] = "Stock logged successfully (" + dto.action + ")";
+        response["stock"]["id"] = dto.stock_id;
+        response["stock"]["action"] = dto.action;
+        response["stock"]["logged_quantity"] = dto.quantity;
+        response["stock"]["stock_available"] = newAvailable;
+        response["stock"]["stock_consumed"] = newConsumed;
+        response["stock"]["present_stock"] = newPresent;
     }
     catch (const std::exception &e)
     {
@@ -126,14 +128,22 @@ Json::Value StockService::getAllStocks()
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        Mapper<StocksMaster> mapper(dbClient);
-
-        auto stocks = mapper.orderBy(StocksMaster::Cols::_name).findAll();
+        auto result = dbClient->execSqlSync("SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, updated_at FROM stocks_master ORDER BY name ASC;");
 
         Json::Value list(Json::arrayValue);
-        for (const auto &item : stocks)
+        for (const auto &row : result)
         {
-            list.append(item.toJson());
+            Json::Value item;
+            item["id"] = row["id"].as<std::string>();
+            item["station_id"] = row["station_id"].as<std::string>();
+            item["category"] = row["category"].as<std::string>();
+            item["name"] = row["name"].as<std::string>();
+            item["stock_available"] = row["stock_available"].as<double>();
+            item["stock_consumed"] = row["stock_consumed"].as<double>();
+            item["present_stock"] = row["present_stock"].as<double>();
+            item["criticality_rate"] = row["criticality_rate"].as<double>();
+            item["updated_at"] = row["updated_at"].as<std::string>();
+            list.append(item);
         }
 
         response["success"] = true;
@@ -153,26 +163,47 @@ Json::Value StockService::getStockById(const std::string &id)
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        Mapper<StocksMaster> masterMapper(dbClient);
-        Mapper<StockLogs> logMapper(dbClient);
+        auto result = dbClient->execSqlSync("SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, created_at, updated_at FROM stocks_master WHERE id = ?;", id);
 
-        StocksMaster stock = masterMapper.findByPrimaryKey(id);
-
-        auto logs = logMapper.findBy(Criteria(StockLogs::Cols::_stock_id, CompareOperator::EQ, id));
-
-        Json::Value logList(Json::arrayValue);
-        for (const auto &logItem : logs)
+        if (result.empty())
         {
-            logList.append(logItem.toJson());
+            response["error"] = "Stock item not found";
+            return response;
+        }
+
+        auto row = result[0];
+        Json::Value item;
+        item["id"] = row["id"].as<std::string>();
+        item["station_id"] = row["station_id"].as<std::string>();
+        item["category"] = row["category"].as<std::string>();
+        item["name"] = row["name"].as<std::string>();
+        item["stock_available"] = row["stock_available"].as<double>();
+        item["stock_consumed"] = row["stock_consumed"].as<double>();
+        item["present_stock"] = row["present_stock"].as<double>();
+        item["criticality_rate"] = row["criticality_rate"].as<double>();
+        item["created_at"] = row["created_at"].as<std::string>();
+        item["updated_at"] = row["updated_at"].as<std::string>();
+
+        auto logResult = dbClient->execSqlSync("SELECT id, action, quantity, notes, logged_at FROM stock_logs WHERE stock_id = ? ORDER BY logged_at DESC;", id);
+        Json::Value logs(Json::arrayValue);
+        for (const auto &logRow : logResult)
+        {
+            Json::Value logEntry;
+            logEntry["id"] = logRow["id"].as<std::string>();
+            logEntry["action"] = logRow["action"].as<std::string>();
+            logEntry["quantity"] = logRow["quantity"].as<double>();
+            logEntry["notes"] = logRow["notes"].as<std::string>();
+            logEntry["logged_at"] = logRow["logged_at"].as<std::string>();
+            logs.append(logEntry);
         }
 
         response["success"] = true;
-        response["stock"] = stock.toJson();
-        response["logs"] = logList;
+        response["stock"] = item;
+        response["logs"] = logs;
     }
     catch (const std::exception &e)
     {
-        response["error"] = "Stock item not found: " + std::string(e.what());
+        response["error"] = e.what();
     }
     return response;
 }
@@ -183,45 +214,27 @@ Json::Value StockService::getFilteredStocks(const std::string &category, const s
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        Mapper<StocksMaster> mapper(dbClient);
+        std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, updated_at FROM stocks_master WHERE 1=1";
+        
+        if (!category.empty()) sql += " AND LOWER(category) = LOWER('" + category + "')";
+        if (!stationId.empty()) sql += " AND station_id = '" + stationId + "'";
+        sql += " ORDER BY name ASC;";
 
-        Criteria criteria;
-        bool hasCriteria = false;
-
-        if (!category.empty())
-        {
-            criteria = Criteria(StocksMaster::Cols::_category, CompareOperator::EQ, category);
-            hasCriteria = true;
-        }
-
-        if (!stationId.empty())
-        {
-            Criteria stationCrit(StocksMaster::Cols::_station_id, CompareOperator::EQ, stationId);
-            if (hasCriteria)
-            {
-                criteria = criteria && stationCrit;
-            }
-            else
-            {
-                criteria = stationCrit;
-                hasCriteria = true;
-            }
-        }
-
-        std::vector<StocksMaster> stocks;
-        if (hasCriteria)
-        {
-            stocks = mapper.orderBy(StocksMaster::Cols::_name).findBy(criteria);
-        }
-        else
-        {
-            stocks = mapper.orderBy(StocksMaster::Cols::_name).findAll();
-        }
-
+        auto result = dbClient->execSqlSync(sql);
         Json::Value list(Json::arrayValue);
-        for (const auto &item : stocks)
+        for (const auto &row : result)
         {
-            list.append(item.toJson());
+            Json::Value item;
+            item["id"] = row["id"].as<std::string>();
+            item["station_id"] = row["station_id"].as<std::string>();
+            item["category"] = row["category"].as<std::string>();
+            item["name"] = row["name"].as<std::string>();
+            item["stock_available"] = row["stock_available"].as<double>();
+            item["stock_consumed"] = row["stock_consumed"].as<double>();
+            item["present_stock"] = row["present_stock"].as<double>();
+            item["criticality_rate"] = row["criticality_rate"].as<double>();
+            item["updated_at"] = row["updated_at"].as<std::string>();
+            list.append(item);
         }
 
         response["success"] = true;
@@ -248,31 +261,15 @@ Json::Value StockService::getAllCategories(const std::string &stationId)
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        Mapper<StocksMaster> mapper(dbClient);
+        std::string sql = "SELECT DISTINCT category FROM stocks_master";
+        if (!stationId.empty()) sql += " WHERE station_id = '" + stationId + "'";
+        sql += " ORDER BY category ASC;";
 
-        std::vector<StocksMaster> stocks;
-        if (!stationId.empty())
-        {
-            stocks = mapper.findBy(Criteria(StocksMaster::Cols::_station_id, CompareOperator::EQ, stationId));
-        }
-        else
-        {
-            stocks = mapper.findAll();
-        }
-
-        std::set<std::string> categorySet;
-        for (const auto &item : stocks)
-        {
-            if (!item.getValueOfCategory().empty())
-            {
-                categorySet.insert(item.getValueOfCategory());
-            }
-        }
-
+        auto result = dbClient->execSqlSync(sql);
         Json::Value categories(Json::arrayValue);
-        for (const auto &cat : categorySet)
+        for (const auto &row : result)
         {
-            categories.append(cat);
+            categories.append(row["category"].as<std::string>());
         }
 
         response["success"] = true;
