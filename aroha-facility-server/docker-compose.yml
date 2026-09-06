@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  aroha-facility-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aroha_facility_server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    restart: always
