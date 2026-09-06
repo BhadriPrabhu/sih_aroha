@@ -310,3 +310,122 @@ Json::Value StockService::getStockById(const std::string &id)
     sqlite3_close(db);
     return response;
 }
+
+Json::Value StockService::getFilteredStocks(const std::string &category, const std::string &stationId)
+{
+    Json::Value response;
+    Json::Value list(Json::arrayValue);
+    sqlite3 *db = nullptr;
+
+    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    {
+        response["error"] = "Failed to connect to SQLite database";
+        if (db) sqlite3_close(db);
+        return response;
+    }
+
+    std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, updated_at FROM stocks_master WHERE 1=1";
+    if (!category.empty())
+    {
+        sql += " AND LOWER(category) = LOWER(?)";
+    }
+    if (!stationId.empty())
+    {
+        sql += " AND station_id = ?";
+    }
+    sql += " ORDER BY name ASC;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+    {
+        int paramIdx = 1;
+        if (!category.empty())
+        {
+            sqlite3_bind_text(stmt, paramIdx++, category.c_str(), -1, SQLITE_TRANSIENT);
+        }
+        if (!stationId.empty())
+        {
+            sqlite3_bind_text(stmt, paramIdx++, stationId.c_str(), -1, SQLITE_TRANSIENT);
+        }
+
+        while (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+            Json::Value item;
+            item["id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+            item["station_id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+            item["category"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+            item["name"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
+            item["stock_available"] = sqlite3_column_double(stmt, 4);
+            item["stock_consumed"] = sqlite3_column_double(stmt, 5);
+            item["present_stock"] = sqlite3_column_double(stmt, 6);
+            item["criticality_rate"] = sqlite3_column_double(stmt, 7);
+            item["updated_at"] = sqlite3_column_text(stmt, 8) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 8)) : "";
+            list.append(item);
+        }
+        sqlite3_finalize(stmt);
+    }
+    else
+    {
+        response["error"] = sqlite3_errmsg(db);
+    }
+
+    sqlite3_close(db);
+
+    response["success"] = true;
+    response["filter"]["category"] = category;
+    response["filter"]["station_id"] = stationId;
+    response["count"] = list.size();
+    response["stocks"] = list;
+    return response;
+}
+
+Json::Value StockService::getStocksByCategory(const std::string &category)
+{
+    return getFilteredStocks(category, "");
+}
+
+Json::Value StockService::getAllCategories(const std::string &stationId)
+{
+    Json::Value response;
+    Json::Value categories(Json::arrayValue);
+    sqlite3 *db = nullptr;
+
+    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    {
+        response["error"] = "Failed to connect to SQLite database";
+        if (db) sqlite3_close(db);
+        return response;
+    }
+
+    std::string sql = "SELECT DISTINCT category FROM stocks_master";
+    if (!stationId.empty())
+    {
+        sql += " WHERE station_id = ?";
+    }
+    sql += " ORDER BY category ASC;";
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+    {
+        if (!stationId.empty())
+        {
+            sqlite3_bind_text(stmt, 1, stationId.c_str(), -1, SQLITE_TRANSIENT);
+        }
+
+        while (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+            if (sqlite3_column_text(stmt, 0))
+            {
+                categories.append(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+
+    sqlite3_close(db);
+
+    response["success"] = true;
+    response["count"] = categories.size();
+    response["categories"] = categories;
+    return response;
+}
