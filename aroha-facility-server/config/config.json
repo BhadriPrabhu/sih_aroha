@@ -29,11 +29,6 @@
       "allow_headers": "Content-Type,Authorization"
     },
     "client_max_body_size": "32M",
-    "client_max_memory_body_size": "4M",
-    "log": {
-      "log_path": "",
-      "logfile_base_name": "facility_server",
-      "log_level": "DEBUG"
-    }
+    "client_max_memory_body_size": "4M"
   }
 }

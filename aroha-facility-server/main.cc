@@ -11,7 +11,7 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
     sqlite3 *db = nullptr;
     if (sqlite3_open(dbPath.c_str(), &db) != SQLITE_OK)
     {
-        LOG_ERROR << "Failed to open SQLite database: " << dbPath;
+        std::cerr << "Failed to open SQLite database: " << dbPath << std::endl;
         if (db) sqlite3_close(db);
         return;
     }
@@ -22,7 +22,7 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
         {
             if (entry.is_regular_file() && entry.path().extension() == ".sql")
             {
-                LOG_INFO << "Applying SQL migration: " << entry.path().string();
+                std::cout << "Applying SQL migration: " << entry.path().string() << std::endl;
                 std::ifstream file(entry.path());
                 if (file.is_open())
                 {
@@ -30,12 +30,12 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
                     char *errMsgs = nullptr;
                     if (sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &errMsgs) != SQLITE_OK)
                     {
-                        LOG_ERROR << "SQL Migration error (" << entry.path().filename().string() << "): " << (errMsgs ? errMsgs : "");
+                        std::cerr << "SQL Migration error (" << entry.path().filename().string() << "): " << (errMsgs ? errMsgs : "") << std::endl;
                         if (errMsgs) sqlite3_free(errMsgs);
                     }
                     else
                     {
-                        LOG_INFO << "Successfully applied migration: " << entry.path().filename().string();
+                        std::cout << "Successfully applied migration: " << entry.path().filename().string() << std::endl;
                     }
                 }
             }
@@ -46,15 +46,21 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
 
 int main()
 {
-    fs::create_directories("./logs");
+    // Create logs directory before any Drogon logging
+    try {
+        fs::create_directories("./logs");
+        fs::create_directories("logs");
+    } catch (...) {}
 
-    LOG_INFO << "Starting AROHA Facility Server (Polar Expedition Logistics Node)...";
+    std::cout << "==================================================" << std::endl;
+    std::cout << " Starting AROHA Facility Server (C++ Drogon Node)" << std::endl;
+    std::cout << "==================================================" << std::endl;
 
     // Load Drogon configuration file
     std::string configPath = "config/config.json";
     drogon::app().loadConfigFile(configPath);
 
-    LOG_INFO << "Loaded configuration from " << configPath;
+    std::cout << "Loaded configuration from " << configPath << std::endl;
 
     // Apply database migrations
     runDbMigrations("aroha_facility.db", "db/migrations");
