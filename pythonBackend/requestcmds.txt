@@ -1,0 +1,205 @@
+Health Check
+curl -X GET "http://127.0.0.1:8000/health"
+
+Forecasting API
+POST /forecast
+
+curl -X POST "http://127.0.0.1:8000/forecast" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "item_id": "FUEL-001",
+    "station_id": "MAITRI",
+    "historical_demand": [
+      10, 12, 11, 13, 12,
+      14, 13, 15, 14, 16,
+      15, 17, 16, 18, 17
+    ],
+    "forecast_horizon_days": 30,
+    "expedition_requirement": 50,
+    "expedition_duration_days": 10,
+    "demand_mode": "auto",
+    "tune_alpha": true
+  }'
+
+Test an intermittent-demand item
+
+curl -X POST "http://127.0.0.1:8000/forecast" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "item_id": "SPARE-PART-001",
+    "station_id": "BHARATI",
+    "historical_demand": [
+      0, 0, 0, 5, 0,
+      0, 0, 0, 0, 8,
+      0, 0, 0, 0, 0,
+      6, 0, 0, 0, 0
+    ],
+    "forecast_horizon_days": 30,
+    "expedition_requirement": 0,
+    "expedition_duration_days": null,
+    "demand_mode": "auto",
+    "tune_alpha": true
+  }'
+
+Criticality API
+POST /criticality
+
+curl -X POST "http://127.0.0.1:8000/criticality" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "item_id": "MED-001",
+    "station_id": "MAITRI",
+    "current_stock": 20,
+    "forecast_daily_demand": 5,
+    "essentiality": 1.0,
+    "lead_time_days": 40,
+    "expedition_requirement": 30,
+    "days_until_expedition": 5,
+    "expedition_priority": 1.0,
+    "forecast_mae": 2.0,
+    "urgency_threshold_days": 10,
+    "reference_lead_time_days": 30,
+    "reference_error": 10,
+    "weights": {
+      "essentiality": 0.35,
+      "urgency": 0.30,
+      "lead_time": 0.15,
+      "expedition": 0.10,
+      "uncertainty": 0.10
+    }
+  }'
+
+Cargo Optimization API
+POST /optimize
+
+curl -X POST "http://127.0.0.1:8000/optimize" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "shipment_id": "SHIP-001",
+    "origin_station": "NCPOR",
+    "destination_station": "MAITRI",
+    "cargo_weight_capacity": 100,
+    "cargo_volume_capacity": 1.0,
+    "items": [
+      {
+        "item_id": "MED-001",
+        "unit_weight": 5,
+        "unit_volume": 0.05,
+        "available_quantity": 20,
+        "required_quantity": 10,
+        "criticality": 0.95
+      },
+      {
+        "item_id": "FUEL-001",
+        "unit_weight": 10,
+        "unit_volume": 0.10,
+        "available_quantity": 15,
+        "required_quantity": 8,
+        "criticality": 0.80
+      },
+      {
+        "item_id": "FOOD-001",
+        "unit_weight": 4,
+        "unit_volume": 0.04,
+        "available_quantity": 20,
+        "required_quantity": 12,
+        "criticality": 0.65
+      },
+      {
+        "item_id": "SPARE-001",
+        "unit_weight": 8,
+        "unit_volume": 0.08,
+        "available_quantity": 10,
+        "required_quantity": 6,
+        "criticality": 0.90
+      }
+    ]
+  }'
+
+Full Pipeline API
+
+POST /pipeline
+
+curl -X POST "http://127.0.0.1:8000/pipeline" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "station_id": "MAITRI",
+    "forecast_horizon_days": 30,
+    "cargo_weight_capacity": 150,
+    "cargo_volume_capacity": 2.0,
+    "items": [
+      {
+        "item_id": "MED-001",
+        "historical_demand": [
+          5, 6, 5, 7, 6,
+          8, 7, 6, 7, 8,
+          6, 7, 8, 7, 9
+        ],
+        "current_stock": 20,
+        "essentiality": 1.0,
+        "lead_time_days": 40,
+        "expedition_requirement": 20,
+        "expedition_duration_days": 10,
+        "days_until_expedition": 7,
+        "expedition_priority": 1.0,
+        "unit_weight": 5,
+        "unit_volume": 0.05,
+        "available_quantity": 20
+      },
+      {
+        "item_id": "FUEL-001",
+        "historical_demand": [
+          10, 12, 11, 13, 12,
+          14, 13, 15, 14, 16,
+          15, 17, 16, 18, 17
+        ],
+        "current_stock": 100,
+        "essentiality": 0.9,
+        "lead_time_days": 35,
+        "expedition_requirement": 50,
+        "expedition_duration_days": 10,
+        "days_until_expedition": 15,
+        "expedition_priority": 0.9,
+        "unit_weight": 10,
+        "unit_volume": 0.1,
+        "available_quantity": 20
+      },
+      {
+        "item_id": "FOOD-001",
+        "historical_demand": [
+          20, 21, 19, 22, 20,
+          21, 23, 22, 21, 20,
+          22, 21, 23, 22, 24
+        ],
+        "current_stock": 300,
+        "essentiality": 0.8,
+        "lead_time_days": 25,
+        "expedition_requirement": 100,
+        "expedition_duration_days": 20,
+        "days_until_expedition": 20,
+        "expedition_priority": 0.8,
+        "unit_weight": 4,
+        "unit_volume": 0.04,
+        "available_quantity": 50
+      },
+      {
+        "item_id": "SPARE-001",
+        "historical_demand": [
+          0, 0, 0, 5, 0,
+          0, 0, 0, 0, 8,
+          0, 0, 0, 0, 0,
+          6, 0, 0, 0, 0
+        ],
+        "current_stock": 2,
+        "essentiality": 0.9,
+        "lead_time_days": 50,
+        "expedition_requirement": 5,
+        "expedition_duration_days": 10,
+        "days_until_expedition": 10,
+        "expedition_priority": 0.9,
+        "unit_weight": 8,
+        "unit_volume": 0.08,
+        "available_quantity": 10
+      }
+    ]
+  }'
