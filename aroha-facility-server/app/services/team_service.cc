@@ -1,13 +1,11 @@
 #include "team_service.h"
 #include <drogon/drogon.h>
-#include <sqlite3.h>
+#include <drogon/orm/Criteria.h>
 #include <random>
 #include <sstream>
 
-TeamService::TeamService(const std::string &dbPath)
-    : dbPath_(dbPath)
-{
-}
+using namespace drogon::orm;
+using namespace drogon_model::aroha_facility;
 
 std::string TeamService::generateUuid(const std::string &prefix)
 {
@@ -26,298 +24,185 @@ std::string TeamService::generateUuid(const std::string &prefix)
 Json::Value TeamService::getAllTeams()
 {
     Json::Value response;
-    Json::Value list(Json::arrayValue);
-    sqlite3 *db = nullptr;
-
-    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    try
     {
-        response["error"] = "Failed to connect to SQLite database";
-        if (db) sqlite3_close(db);
-        return response;
-    }
+        auto dbClient = drogon::app().getDbClient();
+        Mapper<TeamDetails> mapper(dbClient);
 
-    std::string sql = "SELECT id, teamid, teamname, active_status, created_at, updated_at FROM team_details ORDER BY teamname ASC;";
-    sqlite3_stmt *stmt = nullptr;
+        auto teams = mapper.orderBy(TeamDetails::Cols::_teamname).findAll();
 
-    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
-    {
-        while (sqlite3_step(stmt) == SQLITE_ROW)
+        Json::Value list(Json::arrayValue);
+        for (const auto &item : teams)
         {
-            Json::Value item;
-            item["id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-            item["teamid"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-            item["teamname"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-            item["active_status"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
-            item["created_at"] = sqlite3_column_text(stmt, 4) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4)) : "";
-            item["updated_at"] = sqlite3_column_text(stmt, 5) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5)) : "";
-            list.append(item);
+            list.append(item.toJson());
         }
-        sqlite3_finalize(stmt);
+
+        response["success"] = true;
+        response["count"] = list.size();
+        response["teams"] = list;
     }
-
-    sqlite3_close(db);
-
-    response["success"] = true;
-    response["count"] = list.size();
-    response["teams"] = list;
+    catch (const std::exception &e)
+    {
+        response["error"] = e.what();
+    }
     return response;
 }
 
 Json::Value TeamService::createTeam(const CreateTeamDto &dto)
 {
     Json::Value response;
-    sqlite3 *db = nullptr;
-
-    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    try
     {
-        response["error"] = "Failed to connect to SQLite database";
-        if (db) sqlite3_close(db);
-        return response;
-    }
+        auto dbClient = drogon::app().getDbClient();
+        Mapper<TeamDetails> mapper(dbClient);
 
-    std::string id = generateUuid("tm");
-    std::string sql = "INSERT INTO team_details (id, teamid, teamname, active_status) VALUES (?, ?, ?, ?);";
-    sqlite3_stmt *stmt = nullptr;
+        TeamDetails team;
+        std::string id = generateUuid("tm");
+        team.setId(id);
+        team.setTeamid(dto.teamid);
+        team.setTeamname(dto.teamname);
+        team.setActiveStatus(dto.active_status);
 
-    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
-    {
-        response["error"] = sqlite3_errmsg(db);
-        sqlite3_close(db);
-        return response;
-    }
+        mapper.insert(team);
 
-    sqlite3_bind_text(stmt, 1, id.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, dto.teamid.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, dto.teamname.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 4, dto.active_status.c_str(), -1, SQLITE_TRANSIENT);
-
-    if (sqlite3_step(stmt) == SQLITE_DONE)
-    {
         response["success"] = true;
-        response["message"] = "Team created successfully";
-        response["team"]["id"] = id;
-        response["team"]["teamid"] = dto.teamid;
-        response["team"]["teamname"] = dto.teamname;
-        response["team"]["active_status"] = dto.active_status;
+        response["message"] = "Team created successfully via Drogon ORM";
+        response["team"] = team.toJson();
     }
-    else
+    catch (const std::exception &e)
     {
-        response["error"] = sqlite3_errmsg(db);
+        response["error"] = e.what();
     }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
     return response;
 }
 
 Json::Value TeamService::getTeamById(const std::string &teamid)
 {
     Json::Value response;
-    sqlite3 *db = nullptr;
-
-    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    try
     {
-        response["error"] = "Failed to connect to SQLite database";
-        if (db) sqlite3_close(db);
-        return response;
-    }
+        auto dbClient = drogon::app().getDbClient();
+        Mapper<TeamDetails> teamMapper(dbClient);
+        Mapper<MemberDetails> memberMapper(dbClient);
 
-    std::string sql = "SELECT id, teamid, teamname, active_status, created_at, updated_at FROM team_details WHERE teamid = ?;";
-    sqlite3_stmt *stmt = nullptr;
-
-    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
-    {
-        response["error"] = sqlite3_errmsg(db);
-        sqlite3_close(db);
-        return response;
-    }
-
-    sqlite3_bind_text(stmt, 1, teamid.c_str(), -1, SQLITE_TRANSIENT);
-
-    if (sqlite3_step(stmt) == SQLITE_ROW)
-    {
-        Json::Value team;
-        team["id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-        team["teamid"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-        team["teamname"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-        team["active_status"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
-        team["created_at"] = sqlite3_column_text(stmt, 4) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4)) : "";
-        team["updated_at"] = sqlite3_column_text(stmt, 5) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5)) : "";
-        sqlite3_finalize(stmt);
-
-        // Fetch members
-        Json::Value members(Json::arrayValue);
-        std::string memSql = "SELECT id, teamid, name, role, activity_status, created_at FROM member_details WHERE teamid = ? ORDER BY name ASC;";
-        sqlite3_stmt *memStmt = nullptr;
-
-        if (sqlite3_prepare_v2(db, memSql.c_str(), -1, &memStmt, nullptr) == SQLITE_OK)
+        auto teams = teamMapper.findBy(Criteria(TeamDetails::Cols::_teamid, CompareOperator::EQ, teamid));
+        if (teams.empty())
         {
-            sqlite3_bind_text(memStmt, 1, teamid.c_str(), -1, SQLITE_TRANSIENT);
-            while (sqlite3_step(memStmt) == SQLITE_ROW)
-            {
-                Json::Value member;
-                member["id"] = reinterpret_cast<const char *>(sqlite3_column_text(memStmt, 0));
-                member["teamid"] = reinterpret_cast<const char *>(sqlite3_column_text(memStmt, 1));
-                member["name"] = reinterpret_cast<const char *>(sqlite3_column_text(memStmt, 2));
-                member["role"] = reinterpret_cast<const char *>(sqlite3_column_text(memStmt, 3));
-                member["activity_status"] = reinterpret_cast<const char *>(sqlite3_column_text(memStmt, 4));
-                member["created_at"] = sqlite3_column_text(memStmt, 5) ? reinterpret_cast<const char *>(sqlite3_column_text(memStmt, 5)) : "";
-                members.append(member);
-            }
-            sqlite3_finalize(memStmt);
+            response["error"] = "Team not found";
+            return response;
+        }
+
+        TeamDetails team = teams[0];
+        auto members = memberMapper.orderBy(MemberDetails::Cols::_name)
+                           .findBy(Criteria(MemberDetails::Cols::_teamid, CompareOperator::EQ, teamid));
+
+        Json::Value memberList(Json::arrayValue);
+        for (const auto &mem : members)
+        {
+            memberList.append(mem.toJson());
         }
 
         response["success"] = true;
-        response["team"] = team;
-        response["members"] = members;
+        response["team"] = team.toJson();
+        response["members"] = memberList;
     }
-    else
+    catch (const std::exception &e)
     {
-        response["error"] = "Team not found";
-        sqlite3_finalize(stmt);
+        response["error"] = e.what();
     }
-
-    sqlite3_close(db);
     return response;
 }
 
 Json::Value TeamService::getTeamMembers(const std::string &teamid)
 {
     Json::Value response;
-    Json::Value members(Json::arrayValue);
-    sqlite3 *db = nullptr;
-
-    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    try
     {
-        response["error"] = "Failed to connect to SQLite database";
-        if (db) sqlite3_close(db);
-        return response;
-    }
+        auto dbClient = drogon::app().getDbClient();
+        Mapper<MemberDetails> mapper(dbClient);
 
-    std::string sql = "SELECT id, teamid, name, role, activity_status, created_at FROM member_details WHERE teamid = ? ORDER BY name ASC;";
-    sqlite3_stmt *stmt = nullptr;
+        auto members = mapper.orderBy(MemberDetails::Cols::_name)
+                           .findBy(Criteria(MemberDetails::Cols::_teamid, CompareOperator::EQ, teamid));
 
-    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
-    {
-        sqlite3_bind_text(stmt, 1, teamid.c_str(), -1, SQLITE_TRANSIENT);
-        while (sqlite3_step(stmt) == SQLITE_ROW)
+        Json::Value memberList(Json::arrayValue);
+        for (const auto &mem : members)
         {
-            Json::Value member;
-            member["id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-            member["teamid"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-            member["name"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-            member["role"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
-            member["activity_status"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4));
-            member["created_at"] = sqlite3_column_text(stmt, 5) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5)) : "";
-            members.append(member);
+            memberList.append(mem.toJson());
         }
-        sqlite3_finalize(stmt);
+
+        response["success"] = true;
+        response["teamid"] = teamid;
+        response["count"] = memberList.size();
+        response["members"] = memberList;
     }
-
-    sqlite3_close(db);
-
-    response["success"] = true;
-    response["teamid"] = teamid;
-    response["count"] = members.size();
-    response["members"] = members;
+    catch (const std::exception &e)
+    {
+        response["error"] = e.what();
+    }
     return response;
 }
 
 Json::Value TeamService::addTeamMember(const CreateMemberDto &dto)
 {
     Json::Value response;
-    sqlite3 *db = nullptr;
-
-    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    try
     {
-        response["error"] = "Failed to connect to SQLite database";
-        if (db) sqlite3_close(db);
-        return response;
-    }
+        auto dbClient = drogon::app().getDbClient();
+        Mapper<MemberDetails> mapper(dbClient);
 
-    std::string id = generateUuid("mem");
-    std::string sql = "INSERT INTO member_details (id, teamid, name, role, activity_status) VALUES (?, ?, ?, ?, ?);";
-    sqlite3_stmt *stmt = nullptr;
+        MemberDetails member;
+        std::string id = generateUuid("mem");
+        member.setId(id);
+        member.setTeamid(dto.teamid);
+        member.setName(dto.name);
+        member.setRole(dto.role);
+        member.setActivityStatus(dto.activity_status);
 
-    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
-    {
-        response["error"] = sqlite3_errmsg(db);
-        sqlite3_close(db);
-        return response;
-    }
+        mapper.insert(member);
 
-    sqlite3_bind_text(stmt, 1, id.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, dto.teamid.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 3, dto.name.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 4, dto.role.c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 5, dto.activity_status.c_str(), -1, SQLITE_TRANSIENT);
-
-    if (sqlite3_step(stmt) == SQLITE_DONE)
-    {
         response["success"] = true;
-        response["message"] = "Member added to team successfully";
-        response["member"]["id"] = id;
-        response["member"]["teamid"] = dto.teamid;
-        response["member"]["name"] = dto.name;
-        response["member"]["role"] = dto.role;
-        response["member"]["activity_status"] = dto.activity_status;
+        response["message"] = "Member added to team successfully via Drogon ORM";
+        response["member"] = member.toJson();
     }
-    else
+    catch (const std::exception &e)
     {
-        response["error"] = sqlite3_errmsg(db);
+        response["error"] = e.what();
     }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
     return response;
 }
 
 Json::Value TeamService::getAllMembers(const std::string &activityStatus)
 {
     Json::Value response;
-    Json::Value members(Json::arrayValue);
-    sqlite3 *db = nullptr;
-
-    if (sqlite3_open(dbPath_.c_str(), &db) != SQLITE_OK)
+    try
     {
-        response["error"] = "Failed to connect to SQLite database";
-        if (db) sqlite3_close(db);
-        return response;
-    }
+        auto dbClient = drogon::app().getDbClient();
+        Mapper<MemberDetails> mapper(dbClient);
 
-    std::string sql = "SELECT id, teamid, name, role, activity_status, created_at FROM member_details";
-    if (!activityStatus.empty())
-    {
-        sql += " WHERE LOWER(activity_status) = LOWER(?)";
-    }
-    sql += " ORDER BY name ASC;";
-
-    sqlite3_stmt *stmt = nullptr;
-    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
-    {
+        std::vector<MemberDetails> members;
         if (!activityStatus.empty())
         {
-            sqlite3_bind_text(stmt, 1, activityStatus.c_str(), -1, SQLITE_TRANSIENT);
+            members = mapper.orderBy(MemberDetails::Cols::_name)
+                          .findBy(Criteria(MemberDetails::Cols::_activity_status, CompareOperator::EQ, activityStatus));
         }
-
-        while (sqlite3_step(stmt) == SQLITE_ROW)
+        else
         {
-            Json::Value member;
-            member["id"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
-            member["teamid"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
-            member["name"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
-            member["role"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 3));
-            member["activity_status"] = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 4));
-            member["created_at"] = sqlite3_column_text(stmt, 5) ? reinterpret_cast<const char *>(sqlite3_column_text(stmt, 5)) : "";
-            members.append(member);
+            members = mapper.orderBy(MemberDetails::Cols::_name).findAll();
         }
-        sqlite3_finalize(stmt);
+
+        Json::Value memberList(Json::arrayValue);
+        for (const auto &mem : members)
+        {
+            memberList.append(mem.toJson());
+        }
+
+        response["success"] = true;
+        response["count"] = memberList.size();
+        response["members"] = memberList;
     }
-
-    sqlite3_close(db);
-
-    response["success"] = true;
-    response["count"] = members.size();
-    response["members"] = members;
+    catch (const std::exception &e)
+    {
+        response["error"] = e.what();
+    }
     return response;
 }
