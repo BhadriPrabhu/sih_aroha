@@ -15,13 +15,13 @@
       "dbname": "aroha_facility.db",
       "user": "",
       "passwd": "",
-      "is_fast": false,
+      "is_fast": true,
       "number_of_connections": 1,
       "timeout": -1.0
     }
   ],
   "app": {
-    "number_of_threads": 4,
+    "number_of_threads": 1,
     "enable_cors": true,
     "cors_header": {
       "allow_origin": "*",
