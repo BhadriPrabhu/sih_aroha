@@ -20,16 +20,14 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/utils
 )
 
-# Find Drogon dependency
+# Find Drogon dependency (includes SQLite3 support)
 find_package(Drogon REQUIRED)
-find_package(SQLite3 REQUIRED)
 
 # Executable target
 add_executable(${PROJECT_NAME} main.cc ${SRC_FILES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     Drogon::Drogon
-    SQLite::SQLite3
 )
 
 # Installation target
