@@ -31,8 +31,10 @@ RUN git clone --depth 1 -b v1.9.5 --recursive https://github.com/drogonframework
 WORKDIR /app
 COPY . .
 
-# Build C++ Drogon Facility Server executable
-RUN mkdir build && cd build && \
+# Force clean build and create logs directories
+RUN mkdir -p logs /app/logs && \
+    rm -rf build && mkdir build && cd build && \
+    mkdir -p logs && \
     cmake .. && \
     make -j$(nproc)
 
