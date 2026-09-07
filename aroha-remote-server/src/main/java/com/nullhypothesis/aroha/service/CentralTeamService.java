@@ -3,8 +3,10 @@ package com.nullhypothesis.aroha.service;
 import com.nullhypothesis.aroha.dto.MemberDto;
 import com.nullhypothesis.aroha.dto.TeamDto;
 import com.nullhypothesis.aroha.model.MemberEntity;
+import com.nullhypothesis.aroha.model.StationEntity;
 import com.nullhypothesis.aroha.model.TeamEntity;
 import com.nullhypothesis.aroha.repository.MemberRepository;
+import com.nullhypothesis.aroha.repository.StationRepository;
 import com.nullhypothesis.aroha.repository.TeamRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +21,24 @@ public class CentralTeamService {
 
     private final TeamRepository teamRepository;
     private final MemberRepository memberRepository;
+    private final StationRepository stationRepository;
 
-    public CentralTeamService(TeamRepository teamRepository, MemberRepository memberRepository) {
+    public CentralTeamService(TeamRepository teamRepository, MemberRepository memberRepository, StationRepository stationRepository) {
         this.teamRepository = teamRepository;
         this.memberRepository = memberRepository;
+        this.stationRepository = stationRepository;
+    }
+
+    private void ensureStationExists(String stationId) {
+        if (!stationRepository.existsById(stationId)) {
+            StationEntity station = StationEntity.builder()
+                    .stationId(stationId)
+                    .stationName("Station (" + stationId + ")")
+                    .location("Antarctica")
+                    .status("ACTIVE")
+                    .build();
+            stationRepository.save(station);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -54,6 +70,8 @@ public class CentralTeamService {
                 ? dto.getStationId()
                 : "STATION-MAITRI";
 
+        ensureStationExists(stationId);
+
         String teamId = (dto.getTeamId() != null && !dto.getTeamId().isEmpty())
                 ? dto.getTeamId()
                 : "TEAM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -77,6 +95,8 @@ public class CentralTeamService {
         String stationId = (dto.getStationId() != null && !dto.getStationId().isEmpty())
                 ? dto.getStationId()
                 : "STATION-MAITRI";
+
+        ensureStationExists(stationId);
 
         String memberId = (dto.getMemberId() != null && !dto.getMemberId().isEmpty())
                 ? dto.getMemberId()

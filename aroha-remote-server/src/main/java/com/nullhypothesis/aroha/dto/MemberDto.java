@@ -1,25 +1,33 @@
 package com.nullhypothesis.aroha.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 public class MemberDto {
     private Long id;
+
+    @JsonProperty("station_id")
+    @JsonAlias({"station_id", "stationId", "station"})
     private String stationId;
 
     @JsonProperty("memberid")
+    @JsonAlias({"memberid", "member_id", "memberId"})
     private String memberId;
 
     @JsonProperty("teamid")
+    @JsonAlias({"teamid", "team_id", "teamId"})
     private String teamId;
 
     @JsonProperty("fullname")
+    @JsonAlias({"fullname", "full_name", "fullName", "name"})
     private String fullName;
 
     private String role;
     private String status;
 
     @JsonProperty("updated_at")
+    @JsonAlias({"updated_at", "updatedAt"})
     private LocalDateTime updatedAt;
 
     public MemberDto() {}
