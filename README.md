@@ -9,7 +9,7 @@
 ---
 
 ## The Mission
-AROHA is a three-tier, offline-first logistics platform designed for India's Antarctic research bases (Maitri and Bharati). Polar expeditions face zero connectivity, extreme weather, and strict transport payload limits. AROHA replaces manual guesswork with a deterministic operations-research pipeline, ensuring survival through demand-aware forecasting, multi-factor risk scoring, and risk-reduction cargo optimization.
+AROHA is a three-tier, offline-first logistics intelligence platform designed for the unforgiving logistics environment of India’s Antarctic research stations. Built for Maitri, Bharati and Himadri, it enables teams to anticipate demand, quantify supply risk, and optimize every kilogram of cargo under severe connectivity, weather, and payload constraints. Through a deterministic operations-research pipeline, AROHA transforms uncertainty into actionable resupply decisions, helping ensure that the right resources arrive, in the right quantities, before they are needed.
 
 ## Core Mathematical Pipeline
 Our system features three integrated C++ modules operating natively on-station:
