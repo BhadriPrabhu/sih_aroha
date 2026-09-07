@@ -9,6 +9,8 @@ public:
     METHOD_LIST_BEGIN
     // GET /api/v1/teams -> List all teams
     ADD_METHOD_TO(TeamController::getAllTeams, "/api/v1/teams", drogon::Get);
+    ADD_METHOD_TO(TeamController::getAllTeams, "/api/v1/teams/all", drogon::Get);
+    ADD_METHOD_TO(TeamController::getAllTeams, "/api/v1/getallteams", drogon::Get);
 
     // POST /api/v1/teams -> Create a new team
     ADD_METHOD_TO(TeamController::createTeam, "/api/v1/teams", drogon::Post);

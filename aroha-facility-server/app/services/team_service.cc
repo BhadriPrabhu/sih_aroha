@@ -41,6 +41,21 @@ static void ensureTeamTablesExist()
             "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
             "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
         );
+
+        // Auto-seed default sample teams
+        dbClient->execSqlSync(
+            "INSERT OR IGNORE INTO team_details (id, teamid, teamname, active_status) VALUES "
+            "('tm-id-001', 'TEAM-ALPHA', 'Traverse Reconnaissance Alpha', 'ACTIVE'), "
+            "('tm-id-002', 'TEAM-BETA', 'Ice Core Drilling Unit', 'ACTIVE'), "
+            "('tm-id-003', 'TEAM-GAMMA', 'Station Maintenance Crew', 'INACTIVE');"
+        );
+        dbClient->execSqlSync(
+            "INSERT OR IGNORE INTO member_details (id, teamid, name, role, activity_status) VALUES "
+            "('mem-001', 'TEAM-ALPHA', 'Dr. Aarav Sharma', 'Lead Glaciologist', 'FIELD_MISSION'), "
+            "('mem-002', 'TEAM-ALPHA', 'Captain Vikram Singh', 'Navigation Specialist', 'FIELD_MISSION'), "
+            "('mem-003', 'TEAM-BETA', 'Priya Patel', 'Drill Technician', 'ON_STATION'), "
+            "('mem-004', 'TEAM-BETA', 'Rohan Gupta', 'Equipment Engineer', 'ON_STATION');"
+        );
     }
     catch (const std::exception &e)
     {
