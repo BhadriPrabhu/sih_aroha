@@ -10,6 +10,8 @@ struct CreateStockDto
     std::string name;
     double stock_available{0.0};
     double criticality_rate{0.5};
+    double essentiality_score{0.5};
+    double lead_time_days{7.0};
 
     static CreateStockDto fromJson(const Json::Value &json)
     {
@@ -19,6 +21,8 @@ struct CreateStockDto
         dto.name = json.get("name", "").asString();
         dto.stock_available = json.get("stock_available", 0.0).asDouble();
         dto.criticality_rate = json.get("criticality_rate", 0.5).asDouble();
+        dto.essentiality_score = json.get("essentiality_score", json.get("criticality_rate", 0.5).asDouble()).asDouble();
+        dto.lead_time_days = json.get("lead_time_days", 7.0).asDouble();
         return dto;
     }
 };

@@ -31,6 +31,9 @@ public:
     /// Retrieves all distinct categories present in stocks_master
     Json::Value getAllCategories(const std::string &stationId = "");
 
+    /// Triggers asynchronous analytics calculation for a given stock item
+    void triggerAnalytics(const std::string &stockId);
+
 private:
     std::string generateUuid();
 };
