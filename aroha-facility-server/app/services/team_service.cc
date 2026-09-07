@@ -38,7 +38,7 @@ static void ensureTeamTablesExist()
             "teamid TEXT NOT NULL REFERENCES team_details(teamid) ON DELETE CASCADE, "
             "name TEXT NOT NULL, "
             "role TEXT NOT NULL, "
-            "activity_status TEXT NOT NULL DEFAULT 'ON_STATION', "
+            "activity_status TEXT NOT NULL CHECK(activity_status IN ('IN', 'OUT')) DEFAULT 'IN', "
             "is_synced INTEGER DEFAULT 0, "
             "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
             "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
@@ -49,14 +49,19 @@ static void ensureTeamTablesExist()
             "INSERT OR IGNORE INTO team_details (id, teamid, teamname, active_status) VALUES "
             "('tm-id-001', 'TEAM-ALPHA', 'Traverse Reconnaissance Alpha', 'ACTIVE'), "
             "('tm-id-002', 'TEAM-BETA', 'Ice Core Drilling Unit', 'ACTIVE'), "
-            "('tm-id-003', 'TEAM-GAMMA', 'Station Maintenance Crew', 'INACTIVE');"
+            "('tm-id-003', 'TEAM-GAMMA', 'Station Maintenance Crew', 'INACTIVE'), "
+            "('tm-id-004', 'TEAM-DELTA', 'Atmospheric & Meteorological Unit', 'ACTIVE'), "
+            "('tm-id-005', 'TEAM-EPSILON', 'Emergency Rescue & Field Logistics', 'ACTIVE');"
         );
         dbClient->execSqlSync(
             "INSERT OR IGNORE INTO member_details (id, teamid, name, role, activity_status) VALUES "
-            "('mem-001', 'TEAM-ALPHA', 'Dr. Aarav Sharma', 'Lead Glaciologist', 'FIELD_MISSION'), "
-            "('mem-002', 'TEAM-ALPHA', 'Captain Vikram Singh', 'Navigation Specialist', 'FIELD_MISSION'), "
-            "('mem-003', 'TEAM-BETA', 'Priya Patel', 'Drill Technician', 'ON_STATION'), "
-            "('mem-004', 'TEAM-BETA', 'Rohan Gupta', 'Equipment Engineer', 'ON_STATION');"
+            "('mem-001', 'TEAM-ALPHA', 'Dr. Aarav Sharma', 'Lead Glaciologist', 'OUT'), "
+            "('mem-002', 'TEAM-ALPHA', 'Captain Vikram Singh', 'Navigation Specialist', 'OUT'), "
+            "('mem-003', 'TEAM-BETA', 'Priya Patel', 'Drill Technician', 'IN'), "
+            "('mem-004', 'TEAM-BETA', 'Rohan Gupta', 'Equipment Engineer', 'IN'), "
+            "('mem-005', 'TEAM-DELTA', 'Dr. Sunita Menon', 'Chief Meteorologist', 'IN'), "
+            "('mem-006', 'TEAM-EPSILON', 'Major Rajesh Kumar', 'Field Operations Lead', 'OUT'), "
+            "('mem-007', 'TEAM-EPSILON', 'Dr. Meera Deshmukh', 'Medical Officer', 'IN');"
         );
     }
     catch (const std::exception &e)

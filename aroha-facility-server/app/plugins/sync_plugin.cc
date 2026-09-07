@@ -92,7 +92,7 @@ static void ensureAllSyncTablesExist(const drogon::orm::DbClientPtr &dbClient)
             "teamid TEXT NOT NULL REFERENCES team_details(teamid) ON DELETE CASCADE, "
             "name TEXT NOT NULL, "
             "role TEXT NOT NULL, "
-            "activity_status TEXT NOT NULL DEFAULT 'ON_STATION', "
+            "activity_status TEXT NOT NULL CHECK(activity_status IN ('IN', 'OUT')) DEFAULT 'IN', "
             "is_synced INTEGER DEFAULT 0, "
             "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
             "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"

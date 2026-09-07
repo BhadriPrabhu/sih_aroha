@@ -79,3 +79,22 @@ VALUES ('STATION-MAITRI', 'Maitri Antarctic Base', 'Queen Maud Land, Antarctica'
 
 INSERT IGNORE INTO stations (station_id, station_name, location, status) 
 VALUES ('STATION-BHARATI', 'Bharati Antarctic Base', 'Larsemann Hills, Antarctica', 'ACTIVE');
+
+-- Seed Default Teams
+INSERT IGNORE INTO teams_master (station_id, team_id, team_name, active_status) VALUES
+('STATION-MAITRI', 'TEAM-ALPHA', 'Traverse Reconnaissance Alpha', 'ACTIVE'),
+('STATION-MAITRI', 'TEAM-BETA', 'Ice Core Drilling Unit', 'ACTIVE'),
+('STATION-MAITRI', 'TEAM-GAMMA', 'Station Maintenance Crew', 'INACTIVE'),
+('STATION-BHARATI', 'TEAM-DELTA', 'Atmospheric & Meteorological Unit', 'ACTIVE'),
+('STATION-BHARATI', 'TEAM-EPSILON', 'Emergency Rescue & Field Logistics', 'ACTIVE');
+
+-- Seed Default Team Members
+INSERT IGNORE INTO member_details (station_id, member_id, team_id, full_name, role, status) VALUES
+('STATION-MAITRI', 'mem-001', 'TEAM-ALPHA', 'Dr. Aarav Sharma', 'Lead Glaciologist', 'OUT'),
+('STATION-MAITRI', 'mem-002', 'TEAM-ALPHA', 'Captain Vikram Singh', 'Navigation Specialist', 'OUT'),
+('STATION-MAITRI', 'mem-003', 'TEAM-BETA', 'Priya Patel', 'Drill Technician', 'IN'),
+('STATION-MAITRI', 'mem-004', 'TEAM-BETA', 'Rohan Gupta', 'Equipment Engineer', 'IN'),
+('STATION-BHARATI', 'mem-005', 'TEAM-DELTA', 'Dr. Sunita Menon', 'Chief Meteorologist', 'IN'),
+('STATION-BHARATI', 'mem-006', 'TEAM-EPSILON', 'Major Rajesh Kumar', 'Field Operations Lead', 'OUT'),
+('STATION-BHARATI', 'mem-007', 'TEAM-EPSILON', 'Dr. Meera Deshmukh', 'Medical Officer', 'IN');
+
