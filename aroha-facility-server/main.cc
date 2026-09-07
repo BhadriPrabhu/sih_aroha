@@ -23,6 +23,14 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
     sqlite3_exec(db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, &errPragma);
     if (errPragma) sqlite3_free(errPragma);
 
+    // Create schema_migrations audit table if it does not exist
+    const char *createTableSql = 
+        "CREATE TABLE IF NOT EXISTS schema_migrations ("
+        "version TEXT PRIMARY KEY, "
+        "applied_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+        ");";
+    sqlite3_exec(db, createTableSql, nullptr, nullptr, nullptr);
+
     if (fs::exists(migrationsDir))
     {
         std::vector<fs::path> sqlFiles;
@@ -39,7 +47,28 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
 
         for (const auto &sqlPath : sqlFiles)
         {
-            std::cout << "Applying SQL migration: " << sqlPath.string() << std::endl;
+            std::string filename = sqlPath.filename().string();
+
+            // Check if migration has already been executed
+            std::string checkSql = "SELECT COUNT(*) FROM schema_migrations WHERE version = '" + filename + "';";
+            sqlite3_stmt *stmt = nullptr;
+            bool alreadyApplied = false;
+            if (sqlite3_prepare_v2(db, checkSql.c_str(), -1, &stmt, nullptr) == SQLITE_OK)
+            {
+                if (sqlite3_step(stmt) == SQLITE_ROW)
+                {
+                    alreadyApplied = (sqlite3_column_int(stmt, 0) > 0);
+                }
+                sqlite3_finalize(stmt);
+            }
+
+            if (alreadyApplied)
+            {
+                std::cout << "Skipping migration (already applied): " << filename << std::endl;
+                continue;
+            }
+
+            std::cout << "Applying SQL migration: " << filename << std::endl;
             std::ifstream file(sqlPath);
             if (file.is_open())
             {
@@ -47,12 +76,14 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
                 char *errMsgs = nullptr;
                 if (sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &errMsgs) != SQLITE_OK)
                 {
-                    std::cerr << "SQL Migration error (" << sqlPath.filename().string() << "): " << (errMsgs ? errMsgs : "") << std::endl;
+                    std::cerr << "SQL Migration error (" << filename << "): " << (errMsgs ? errMsgs : "") << std::endl;
                     if (errMsgs) sqlite3_free(errMsgs);
                 }
                 else
                 {
-                    std::cout << "Successfully applied migration: " << sqlPath.filename().string() << std::endl;
+                    std::string recordSql = "INSERT INTO schema_migrations (version) VALUES ('" + filename + "');";
+                    sqlite3_exec(db, recordSql.c_str(), nullptr, nullptr, nullptr);
+                    std::cout << "Successfully applied migration: " << filename << std::endl;
                 }
             }
         }
@@ -62,8 +93,10 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
 
 int main()
 {
-    // Create logs directory before Drogon init
+    // Create data and logs directory before Drogon init
     try {
+        fs::create_directories("./data");
+        fs::create_directories("data");
         fs::create_directories("./logs");
         fs::create_directories("logs");
     } catch (...) {}
@@ -73,7 +106,7 @@ int main()
     std::cout << "==================================================" << std::endl;
 
     // Apply database migrations BEFORE server init
-    runDbMigrations("aroha_facility.db", "db/migrations");
+    runDbMigrations("/app/data/aroha_facility.db", "db/migrations");
 
     // Load Drogon configuration file
     std::string configPath = "config/config.json";

@@ -12,12 +12,31 @@
       "rdbms": "sqlite3",
       "host": "",
       "port": 0,
-      "dbname": "aroha_facility.db",
+      "filename": "/app/data/aroha_facility.db",
+      "dbname": "/app/data/aroha_facility.db",
       "user": "",
       "passwd": "",
       "is_fast": true,
       "number_of_connections": 1,
       "timeout": -1.0
+    }
+  ],
+  "plugins": [
+    {
+      "name": "SqlitePlugin",
+      "config": {
+        "db_path": "/app/data/aroha_facility.db",
+        "migrations_dir": "db/migrations"
+      }
+    },
+    {
+      "name": "SyncPlugin",
+      "config": {
+        "remote_server_url": "http://host.docker.internal:8081",
+        "python_backend_url": "http://host.docker.internal:8000",
+        "station_id": "stn-maitri",
+        "sync_interval_seconds": 5
+      }
     }
   ],
   "app": {

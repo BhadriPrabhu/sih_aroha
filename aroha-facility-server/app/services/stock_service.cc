@@ -1,8 +1,10 @@
 #include "stock_service.h"
+#include "utils/python_analytics_client.h"
 #include <drogon/drogon.h>
 #include <random>
 #include <sstream>
 #include <set>
+#include <vector>
 
 std::string StockService::generateUuid()
 {
@@ -33,6 +35,8 @@ static void ensureStockTablesExist()
             "stock_consumed REAL NOT NULL DEFAULT 0, "
             "present_stock REAL NOT NULL DEFAULT 0, "
             "criticality_rate REAL NOT NULL DEFAULT 0.5, "
+            "criticality_status TEXT DEFAULT 'MEDIUM', "
+            "is_synced INTEGER DEFAULT 0, "
             "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
             "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
         );
@@ -43,6 +47,7 @@ static void ensureStockTablesExist()
             "action TEXT NOT NULL, "
             "quantity REAL NOT NULL, "
             "notes TEXT, "
+            "is_synced INTEGER DEFAULT 0, "
             "logged_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
         );
     }
@@ -65,8 +70,21 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
         double presentStock = initialAvailable - initialConsumed;
 
         dbClient->execSqlSync(
-            "INSERT INTO stocks_master (id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
-            stockId, dto.station_id, dto.category, dto.name, initialAvailable, initialConsumed, presentStock, dto.criticality_rate
+            "INSERT INTO stocks_master (id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, criticality_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+            stockId, dto.station_id, dto.category, dto.name, initialAvailable, initialConsumed, presentStock, dto.criticality_rate, "MEDIUM"
+        );
+
+        // Run Python AI Analytics (/forecast -> /criticality)
+        std::vector<double> history;
+        PythonAnalyticsClient analyticsClient("http://127.0.0.1:8000");
+        AnalyticsResult analytics = analyticsClient.computeItemAnalytics(
+            stockId, dto.station_id, presentStock, history, dto.criticality_rate
+        );
+
+        // Update computed criticality score & status in SQLite
+        dbClient->execSqlSync(
+            "UPDATE stocks_master SET criticality_rate = ?, criticality_status = ?, is_synced = 0 WHERE id = ?;",
+            analytics.criticalityScore, analytics.criticalityStatus, stockId
         );
 
         response["success"] = true;
@@ -78,7 +96,11 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
         response["stock"]["stock_available"] = initialAvailable;
         response["stock"]["stock_consumed"] = initialConsumed;
         response["stock"]["present_stock"] = presentStock;
-        response["stock"]["criticality_rate"] = dto.criticality_rate;
+        response["stock"]["criticality_rate"] = analytics.criticalityScore;
+        response["stock"]["criticality_score"] = analytics.criticalityScore;
+        response["stock"]["criticality_status"] = analytics.criticalityStatus;
+        response["stock"]["forecast_daily_demand"] = analytics.forecastDailyDemand;
+        response["stock"]["forecast_mae"] = analytics.forecastMae;
     }
     catch (const std::exception &e)
     {
@@ -95,15 +117,17 @@ Json::Value StockService::logStock(const LogStockDto &dto)
     {
         auto dbClient = drogon::app().getDbClient();
 
-        auto result = dbClient->execSqlSync("SELECT stock_available, stock_consumed FROM stocks_master WHERE id = ?;", dto.stock_id);
+        auto result = dbClient->execSqlSync("SELECT station_id, stock_available, stock_consumed, criticality_rate FROM stocks_master WHERE id = ?;", dto.stock_id);
         if (result.empty())
         {
             response["error"] = "Stock item not found";
             return response;
         }
 
+        std::string stationId = result[0]["station_id"].as<std::string>();
         double currentAvailable = result[0]["stock_available"].as<double>();
         double currentConsumed = result[0]["stock_consumed"].as<double>();
+        double criticalityRate = result[0]["criticality_rate"].as<double>();
 
         double newAvailable = currentAvailable;
         double newConsumed = currentConsumed;
@@ -125,7 +149,7 @@ Json::Value StockService::logStock(const LogStockDto &dto)
         double newPresent = newAvailable - newConsumed;
 
         dbClient->execSqlSync(
-            "UPDATE stocks_master SET stock_available = ?, stock_consumed = ?, present_stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?;",
+            "UPDATE stocks_master SET stock_available = ?, stock_consumed = ?, present_stock = ?, is_synced = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?;",
             newAvailable, newConsumed, newPresent, dto.stock_id
         );
 
@@ -142,6 +166,26 @@ Json::Value StockService::logStock(const LogStockDto &dto)
             logId, dto.stock_id, dto.action, dto.quantity, dto.notes
         );
 
+        // Fetch historical demand logs from DB
+        std::vector<double> history;
+        auto historyRows = dbClient->execSqlSync("SELECT quantity FROM stock_logs WHERE stock_id = ? ORDER BY logged_at ASC LIMIT 14;", dto.stock_id);
+        for (const auto &row : historyRows)
+        {
+            history.push_back(row["quantity"].as<double>());
+        }
+
+        // Run Python AI Analytics (/forecast -> /criticality)
+        PythonAnalyticsClient analyticsClient("http://127.0.0.1:8000");
+        AnalyticsResult analytics = analyticsClient.computeItemAnalytics(
+            dto.stock_id, stationId, newPresent, history, criticalityRate
+        );
+
+        // Update computed criticality score & status in SQLite
+        dbClient->execSqlSync(
+            "UPDATE stocks_master SET criticality_rate = ?, criticality_status = ?, is_synced = 0 WHERE id = ?;",
+            analytics.criticalityScore, analytics.criticalityStatus, dto.stock_id
+        );
+
         response["success"] = true;
         response["message"] = "Stock logged successfully (" + dto.action + ")";
         response["stock"]["id"] = dto.stock_id;
@@ -150,6 +194,11 @@ Json::Value StockService::logStock(const LogStockDto &dto)
         response["stock"]["stock_available"] = newAvailable;
         response["stock"]["stock_consumed"] = newConsumed;
         response["stock"]["present_stock"] = newPresent;
+        response["stock"]["criticality_rate"] = analytics.criticalityScore;
+        response["stock"]["criticality_score"] = analytics.criticalityScore;
+        response["stock"]["criticality_status"] = analytics.criticalityStatus;
+        response["stock"]["forecast_daily_demand"] = analytics.forecastDailyDemand;
+        response["stock"]["forecast_mae"] = analytics.forecastMae;
     }
     catch (const std::exception &e)
     {

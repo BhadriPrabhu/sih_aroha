@@ -16,6 +16,12 @@ file(GLOB_RECURSE SRC_FILES
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/app
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/controllers
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/dto
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/plugins
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/repositories
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/utils
     ${CMAKE_CURRENT_SOURCE_DIR}/config
     ${CMAKE_CURRENT_SOURCE_DIR}/utils
 )

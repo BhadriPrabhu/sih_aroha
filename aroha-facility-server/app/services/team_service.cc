@@ -28,6 +28,7 @@ static void ensureTeamTablesExist()
             "teamid TEXT NOT NULL UNIQUE, "
             "teamname TEXT NOT NULL, "
             "active_status TEXT NOT NULL DEFAULT 'ACTIVE', "
+            "is_synced INTEGER DEFAULT 0, "
             "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
             "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
         );
@@ -38,6 +39,7 @@ static void ensureTeamTablesExist()
             "name TEXT NOT NULL, "
             "role TEXT NOT NULL, "
             "activity_status TEXT NOT NULL DEFAULT 'ON_STATION', "
+            "is_synced INTEGER DEFAULT 0, "
             "created_at DATETIME DEFAULT CURRENT_TIMESTAMP, "
             "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
         );
