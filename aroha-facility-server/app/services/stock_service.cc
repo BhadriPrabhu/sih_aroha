@@ -4,6 +4,17 @@
 #include <sstream>
 #include <set>
 
+namespace
+{
+constexpr std::size_t kMinimumForecastObservations = 3;
+
+std::string analyticsServiceUrl()
+{
+    const auto &config = drogon::app().getCustomConfig();
+    return config.get("analytics_service_url", "http://127.0.0.1:8000").asString();
+}
+}
+
 std::string StockService::generateUuid()
 {
     static std::random_device rd;
@@ -45,6 +56,13 @@ static void ensureStockTablesExist()
             "notes TEXT, "
             "logged_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
         );
+        dbClient->execSqlSync(
+            "CREATE TABLE IF NOT EXISTS stock_demand_history ("
+            "id TEXT PRIMARY KEY, "
+            "stock_id TEXT NOT NULL REFERENCES stocks_master(id) ON DELETE CASCADE, "
+            "quantity REAL NOT NULL CHECK(quantity >= 0), "
+            "observed_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
+        );
     }
     catch (const std::exception &e)
     {
@@ -65,8 +83,9 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
         double presentStock = initialAvailable - initialConsumed;
 
         dbClient->execSqlSync(
-            "INSERT INTO stocks_master (id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
-            stockId, dto.station_id, dto.category, dto.name, initialAvailable, initialConsumed, presentStock, dto.criticality_rate
+            "INSERT INTO stocks_master (id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, essentiality_score, lead_time_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+            stockId, dto.station_id, dto.category, dto.name, initialAvailable, initialConsumed, presentStock,
+            dto.criticality_rate, dto.essentiality_score, dto.lead_time_days
         );
 
         response["success"] = true;
@@ -79,6 +98,8 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
         response["stock"]["stock_consumed"] = initialConsumed;
         response["stock"]["present_stock"] = presentStock;
         response["stock"]["criticality_rate"] = dto.criticality_rate;
+        response["stock"]["essentiality_score"] = dto.essentiality_score;
+        response["stock"]["lead_time_days"] = dto.lead_time_days;
     }
     catch (const std::exception &e)
     {
@@ -142,6 +163,17 @@ Json::Value StockService::logStock(const LogStockDto &dto)
             logId, dto.stock_id, dto.action, dto.quantity, dto.notes
         );
 
+        // Only consumption is demand. Replenishment changes inventory but must
+        // not distort the demand time series used by the forecast model.
+        if (dto.action == "USED")
+        {
+            const std::string demandId = "demand-" + logId.substr(4);
+            dbClient->execSqlSync(
+                "INSERT INTO stock_demand_history (id, stock_id, quantity) VALUES (?, ?, ?);",
+                demandId, dto.stock_id, dto.quantity
+            );
+        }
+
         response["success"] = true;
         response["message"] = "Stock logged successfully (" + dto.action + ")";
         response["stock"]["id"] = dto.stock_id;
@@ -150,12 +182,134 @@ Json::Value StockService::logStock(const LogStockDto &dto)
         response["stock"]["stock_available"] = newAvailable;
         response["stock"]["stock_consumed"] = newConsumed;
         response["stock"]["present_stock"] = newPresent;
+        response["analytics_triggered"] = dto.action == "USED";
+
+        if (dto.action == "USED")
+        {
+            triggerAnalytics(dto.stock_id);
+        }
     }
     catch (const std::exception &e)
     {
         response["error"] = e.what();
     }
     return response;
+}
+
+void StockService::triggerAnalytics(const std::string &stockId)
+{
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        auto stockResult = dbClient->execSqlSync(
+            "SELECT station_id, present_stock, essentiality_score, lead_time_days "
+            "FROM stocks_master WHERE id = ?;", stockId);
+        auto historyResult = dbClient->execSqlSync(
+            "SELECT quantity FROM stock_demand_history WHERE stock_id = ? "
+            "ORDER BY observed_at ASC, rowid ASC;", stockId);
+
+        if (stockResult.empty() || historyResult.size() < kMinimumForecastObservations)
+        {
+            LOG_INFO << "Analytics deferred for stock " << stockId
+                     << ": at least " << kMinimumForecastObservations
+                     << " USED observations are required.";
+            return;
+        }
+
+        Json::Value forecastPayload;
+        forecastPayload["item_id"] = stockId;
+        forecastPayload["station_id"] = stockResult[0]["station_id"].as<std::string>();
+        forecastPayload["forecast_horizon_days"] = 15;
+        forecastPayload["demand_mode"] = "auto";
+        forecastPayload["tune_alpha"] = true;
+        Json::Value history(Json::arrayValue);
+        for (const auto &row : historyResult)
+        {
+            history.append(row["quantity"].as<double>());
+        }
+        forecastPayload["historical_demand"] = history;
+
+        auto client = drogon::HttpClient::newHttpClient(analyticsServiceUrl());
+        auto forecastRequest = drogon::HttpRequest::newHttpJsonRequest(forecastPayload);
+        forecastRequest->setMethod(drogon::Post);
+        client->sendRequest(
+            forecastRequest,
+            [stockId, client](drogon::ReqResult result, const drogon::HttpResponsePtr &forecastResponse) {
+                if (result != drogon::ReqResult::Ok || !forecastResponse || forecastResponse->getStatusCode() != drogon::k200OK)
+                {
+                    LOG_ERROR << "Forecast request failed for stock " << stockId;
+                    return;
+                }
+
+                const auto forecast = forecastResponse->getJsonObject();
+                if (!forecast || !forecast->isMember("forecast_daily_total") || !forecast->isMember("forecast_mae"))
+                {
+                    LOG_ERROR << "Forecast response was incomplete for stock " << stockId;
+                    return;
+                }
+
+                try
+                {
+                    auto dbClient = drogon::app().getDbClient();
+                    auto stockResult = dbClient->execSqlSync(
+                        "SELECT station_id, present_stock, essentiality_score, lead_time_days "
+                        "FROM stocks_master WHERE id = ?;", stockId);
+                    if (stockResult.empty()) return;
+
+                    Json::Value criticalityPayload;
+                    criticalityPayload["item_id"] = stockId;
+                    criticalityPayload["station_id"] = stockResult[0]["station_id"].as<std::string>();
+                    criticalityPayload["current_stock"] = stockResult[0]["present_stock"].as<double>();
+                    criticalityPayload["essentiality"] = stockResult[0]["essentiality_score"].as<double>();
+                    criticalityPayload["lead_time_days"] = stockResult[0]["lead_time_days"].as<double>();
+                    // These are the two forecast outputs required by the next stage.
+                    criticalityPayload["forecast_daily_demand"] = (*forecast)["forecast_daily_total"];
+                    criticalityPayload["forecast_mae"] = (*forecast)["forecast_mae"];
+
+                    auto criticalityRequest = drogon::HttpRequest::newHttpJsonRequest(criticalityPayload);
+                    criticalityRequest->setMethod(drogon::Post);
+                    client->sendRequest(
+                        criticalityRequest,
+                        [stockId, forecast](drogon::ReqResult criticalityResult, const drogon::HttpResponsePtr &criticalityResponse) {
+                            if (criticalityResult != drogon::ReqResult::Ok || !criticalityResponse || criticalityResponse->getStatusCode() != drogon::k200OK)
+                            {
+                                LOG_ERROR << "Criticality request failed for stock " << stockId;
+                                return;
+                            }
+
+                            const auto criticality = criticalityResponse->getJsonObject();
+                            if (!criticality || !criticality->isMember("criticality_score"))
+                            {
+                                LOG_ERROR << "Criticality response was incomplete for stock " << stockId;
+                                return;
+                            }
+
+                            try
+                            {
+                                drogon::app().getDbClient()->execSqlSync(
+                                    "UPDATE stocks_master SET criticality_rate = ?, forecast_daily_total = ?, forecast_mae = ?, analytics_updated_at = CURRENT_TIMESTAMP WHERE id = ?;",
+                                    (*criticality)["criticality_score"].asDouble(),
+                                    (*forecast)["forecast_daily_total"].asDouble(),
+                                    (*forecast)["forecast_mae"].asDouble(),
+                                    stockId);
+                                LOG_INFO << "Analytics updated for stock " << stockId;
+                            }
+                            catch (const std::exception &e)
+                            {
+                                LOG_ERROR << "Unable to save analytics for stock " << stockId << ": " << e.what();
+                            }
+                        });
+                }
+                catch (const std::exception &e)
+                {
+                    LOG_ERROR << "Unable to prepare criticality request for stock " << stockId << ": " << e.what();
+                }
+            });
+    }
+    catch (const std::exception &e)
+    {
+        LOG_ERROR << "Unable to trigger analytics for stock " << stockId << ": " << e.what();
+    }
 }
 
 Json::Value StockService::getAllStocks()
@@ -165,7 +319,7 @@ Json::Value StockService::getAllStocks()
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        auto result = dbClient->execSqlSync("SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, updated_at FROM stocks_master ORDER BY name ASC;");
+        auto result = dbClient->execSqlSync("SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, essentiality_score, lead_time_days, forecast_daily_total, forecast_mae, analytics_updated_at, updated_at FROM stocks_master ORDER BY name ASC;");
 
         Json::Value list(Json::arrayValue);
         for (const auto &row : result)
@@ -179,6 +333,11 @@ Json::Value StockService::getAllStocks()
             item["stock_consumed"] = row["stock_consumed"].as<double>();
             item["present_stock"] = row["present_stock"].as<double>();
             item["criticality_rate"] = row["criticality_rate"].as<double>();
+            item["essentiality_score"] = row["essentiality_score"].as<double>();
+            item["lead_time_days"] = row["lead_time_days"].as<double>();
+            if (!row["forecast_daily_total"].isNull()) item["forecast_daily_total"] = row["forecast_daily_total"].as<double>();
+            if (!row["forecast_mae"].isNull()) item["forecast_mae"] = row["forecast_mae"].as<double>();
+            if (!row["analytics_updated_at"].isNull()) item["analytics_updated_at"] = row["analytics_updated_at"].as<std::string>();
             item["updated_at"] = row["updated_at"].as<std::string>();
             list.append(item);
         }
@@ -201,7 +360,7 @@ Json::Value StockService::getStockById(const std::string &id)
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        auto result = dbClient->execSqlSync("SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, created_at, updated_at FROM stocks_master WHERE id = ?;", id);
+        auto result = dbClient->execSqlSync("SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, essentiality_score, lead_time_days, forecast_daily_total, forecast_mae, analytics_updated_at, created_at, updated_at FROM stocks_master WHERE id = ?;", id);
 
         if (result.empty())
         {
@@ -219,6 +378,11 @@ Json::Value StockService::getStockById(const std::string &id)
         item["stock_consumed"] = row["stock_consumed"].as<double>();
         item["present_stock"] = row["present_stock"].as<double>();
         item["criticality_rate"] = row["criticality_rate"].as<double>();
+        item["essentiality_score"] = row["essentiality_score"].as<double>();
+        item["lead_time_days"] = row["lead_time_days"].as<double>();
+        if (!row["forecast_daily_total"].isNull()) item["forecast_daily_total"] = row["forecast_daily_total"].as<double>();
+        if (!row["forecast_mae"].isNull()) item["forecast_mae"] = row["forecast_mae"].as<double>();
+        if (!row["analytics_updated_at"].isNull()) item["analytics_updated_at"] = row["analytics_updated_at"].as<std::string>();
         item["created_at"] = row["created_at"].as<std::string>();
         item["updated_at"] = row["updated_at"].as<std::string>();
 
@@ -253,7 +417,7 @@ Json::Value StockService::getFilteredStocks(const std::string &category, const s
     try
     {
         auto dbClient = drogon::app().getDbClient();
-        std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, updated_at FROM stocks_master WHERE 1=1";
+        std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, essentiality_score, lead_time_days, forecast_daily_total, forecast_mae, analytics_updated_at, updated_at FROM stocks_master WHERE 1=1";
         
         if (!category.empty()) sql += " AND LOWER(category) = LOWER('" + category + "')";
         if (!stationId.empty()) sql += " AND station_id = '" + stationId + "'";
@@ -272,6 +436,11 @@ Json::Value StockService::getFilteredStocks(const std::string &category, const s
             item["stock_consumed"] = row["stock_consumed"].as<double>();
             item["present_stock"] = row["present_stock"].as<double>();
             item["criticality_rate"] = row["criticality_rate"].as<double>();
+            item["essentiality_score"] = row["essentiality_score"].as<double>();
+            item["lead_time_days"] = row["lead_time_days"].as<double>();
+            if (!row["forecast_daily_total"].isNull()) item["forecast_daily_total"] = row["forecast_daily_total"].as<double>();
+            if (!row["forecast_mae"].isNull()) item["forecast_mae"] = row["forecast_mae"].as<double>();
+            if (!row["analytics_updated_at"].isNull()) item["analytics_updated_at"] = row["analytics_updated_at"].as<std::string>();
             item["updated_at"] = row["updated_at"].as<std::string>();
             list.append(item);
         }

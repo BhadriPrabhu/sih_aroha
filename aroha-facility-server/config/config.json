@@ -30,5 +30,8 @@
     },
     "client_max_body_size": "32M",
     "client_max_memory_body_size": "4M"
+  },
+  "custom": {
+    "analytics_service_url": "http://127.0.0.1:8000"
   }
 }
