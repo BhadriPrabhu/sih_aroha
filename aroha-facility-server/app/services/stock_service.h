@@ -36,5 +36,4 @@ public:
 
 private:
     std::string generateUuid();
-    void triggerAnalytics(const std::string &stockId);
 };
