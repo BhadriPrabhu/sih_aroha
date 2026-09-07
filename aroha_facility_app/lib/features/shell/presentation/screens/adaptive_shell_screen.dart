@@ -129,14 +129,14 @@ class AdaptiveShellScreen extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                Positioned.fill(child: child),
+                Positioned.fill(key: ValueKey('shell_navigator_wrapper'), child: child),
 
                 // 3. FLOATING TACTICAL BOTTOM BAR (≤ 800px)
                 if (!isWeb)
                   Positioned(
                     left: 20,
                     right: 20,
-                    bottom: 24,
+                    bottom: 10,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(30),
                       child: BackdropFilter(
