@@ -4,10 +4,32 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class MemberProfileScreen extends StatelessWidget {
-  const MemberProfileScreen({super.key});
+  final Map<String, dynamic> memberData;
+
+  const MemberProfileScreen({super.key, required this.memberData});
 
   @override
   Widget build(BuildContext context) {
+    final String name = memberData['name'] ?? 'Unknown Personnel';
+    final String role = memberData['role'] ?? 'Unassigned';
+    final String teamId = memberData['teamid'] ?? 'No Team';
+    final String activityStatus = memberData['activity_status'] ?? 'UNKNOWN';
+
+    // UI Formatting for status
+    Color statusColor = AppColors.textMuted;
+    String statusText = "Unknown";
+    
+    if (activityStatus == 'ON_STATION') {
+      statusColor = AppColors.accentMint;
+      statusText = "Inside Base";
+    } else if (activityStatus == 'FIELD_MISSION') {
+      statusColor = AppColors.accentAmber;
+      statusText = "In Field";
+    } else if (activityStatus == 'MEDICAL_EVAC') {
+      statusColor = AppColors.accentRed;
+      statusText = "Evacuated";
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -34,38 +56,40 @@ class MemberProfileScreen extends StatelessWidget {
                 border: Border.all(color: AppColors.accentCyan, width: 2),
               ),
               alignment: Alignment.center,
-              child: const Text(
-                "A",
-                style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.accentCyan),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.accentCyan),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              "Dr. Aravind S.",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            Text(
+              name,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
-            const Text(
-              "Medical Officer • Expedition Alpha",
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            Text(
+              "$role • $teamId",
+              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
 
             // Emergency Vitals Row
             Row(
               children: [
-                Expanded(child: _buildVitalCard("Blood Group", "O+", Icons.bloodtype, AppColors.accentRed)),
+                Expanded(child: _buildVitalCard("Blood Group", "O+", Icons.bloodtype, AppColors.accentRed)), // Mocked - API doesn't provide this yet
                 const SizedBox(width: 16),
-                Expanded(child: _buildVitalCard("Status", "Outside", Icons.nature_people, AppColors.accentAmber)),
+                Expanded(child: _buildVitalCard("Status", statusText, Icons.nature_people, statusColor)),
               ],
             ),
             const SizedBox(height: 16),
 
             // Deep Dive Details
             _buildDetailSection(
-              title: "Current Location",
-              content: "Grid Sector 4B - Glacier Observation Point\nLast ping: 14 mins ago",
-              icon: Icons.location_on_outlined,
+              title: "System Registration",
+              content: "ID: ${memberData['id']}\nLast Updated: ${memberData['updated_at']?.substring(0, 10) ?? 'N/A'}",
+              icon: Icons.badge_outlined,
             ),
             const SizedBox(height: 16),
             _buildDetailSection(
@@ -82,6 +106,11 @@ class MemberProfileScreen extends StatelessWidget {
                 onPressed: () {},
                 icon: const Icon(Icons.radio),
                 label: const Text("Initiate Direct Radio Comms"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.surfaceElevated,
+                  foregroundColor: AppColors.textPrimary,
+                  side: const BorderSide(color: AppColors.cardBorder),
+                ),
               ),
             ),
           ],
@@ -102,7 +131,7 @@ class MemberProfileScreen extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 32),
           const SizedBox(height: 12),
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary), textAlign: TextAlign.center),
           const SizedBox(height: 4),
           Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         ],

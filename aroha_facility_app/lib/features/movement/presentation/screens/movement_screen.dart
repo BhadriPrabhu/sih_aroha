@@ -1,7 +1,9 @@
 // lib/features/movement/presentation/screens/movement_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/api_constants.dart';
 
 class MovementScreen extends StatefulWidget {
   const MovementScreen({super.key});
@@ -11,15 +13,87 @@ class MovementScreen extends StatefulWidget {
 }
 
 class _MovementScreenState extends State<MovementScreen> {
-  final List<Map<String, String>> groups = [
-    {'name': 'My Group', 'id': 'M'},
-    {'name': 'All Members', 'id': 'A'},
-    {'name': 'Expedition Alpha', 'id': 'E'},
-    {'name': 'Logistics Team', 'id': 'L'},
-    {'name': 'Medical Staff', 'id': 'M'},
-  ];
+  List<dynamic> _teams = [];
+  List<dynamic> _members = [];
+  
+  bool _isLoadingTeams = true;
+  bool _isLoadingMembers = true;
+  
+  String _selectedTeamId = 'ALL';
 
-  String selectedGroup = 'My Group';
+  @override
+  void initState() {
+    super.initState();
+    _fetchTeamsAndInitialMembers();
+  }
+
+  Future<void> _fetchTeamsAndInitialMembers() async {
+    try {
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
+      
+      // Fetch teams and all members concurrently
+      final responses = await Future.wait([
+        dio.get(ApiConstants.getTeams),
+        dio.get(ApiConstants.getMembers),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          // Inject 'All Members' as the first virtual team
+          _teams = [
+            {'teamid': 'ALL', 'teamname': 'All Members'}
+          ];
+          
+          if (responses[0].statusCode == 200) {
+            _teams.addAll(responses[0].data['teams'] ?? []);
+          }
+          
+          if (responses[1].statusCode == 200) {
+            _members = responses[1].data['members'] ?? [];
+          }
+          
+          _isLoadingTeams = false;
+          _isLoadingMembers = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching movement data: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingTeams = false;
+          _isLoadingMembers = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchMembersForTeam(String teamId) async {
+    setState(() {
+      _selectedTeamId = teamId;
+      _isLoadingMembers = true;
+    });
+
+    try {
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
+      final url = teamId == 'ALL' 
+          ? ApiConstants.getMembers 
+          : ApiConstants.getTeamMembers(teamId);
+          
+      final response = await dio.get(url);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _members = response.data['members'] ?? [];
+        });
+      }
+    } catch (e) {
+      print("Error fetching members for team $teamId: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMembers = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,102 +107,96 @@ class _MovementScreenState extends State<MovementScreen> {
               padding: EdgeInsets.fromLTRB(24, 32, 24, 16),
               child: Text(
                 "Personnel Movement",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
               ),
             ),
             
             // 1. Group Selector (Instagram Stories Style)
             SizedBox(
               height: 100,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                scrollDirection: Axis.horizontal,
-                itemCount: groups.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 16),
-                itemBuilder: (context, index) {
-                  final group = groups[index];
-                  final isSelected = selectedGroup == group['name'];
+              child: _isLoadingTeams 
+                ? const Center(child: CircularProgressIndicator(color: AppColors.accentMint))
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _teams.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                    itemBuilder: (context, index) {
+                      final team = _teams[index];
+                      final isSelected = _selectedTeamId == team['teamid'];
+                      final String displayName = team['teamname'] ?? 'Unknown';
+                      final String avatarLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
 
-                  return GestureDetector(
-                    onTap: () => setState(() => selectedGroup = group['name']!),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? AppColors.accentMint : AppColors.cardBorder,
-                              width: isSelected ? 3 : 1,
+                      return GestureDetector(
+                        onTap: () => _fetchMembersForTeam(team['teamid']),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected ? AppColors.accentMint : AppColors.cardBorder,
+                                  width: isSelected ? 3 : 1,
+                                ),
+                                color: AppColors.surfaceElevated,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                avatarLetter,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? AppColors.accentMint : AppColors.textSecondary,
+                                ),
+                              ),
                             ),
-                            color: AppColors.surfaceElevated,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            group['id']!,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected ? AppColors.accentMint : AppColors.textSecondary,
+                            const SizedBox(height: 8),
+                            Text(
+                              displayName.length > 10 ? '${displayName.substring(0, 8)}...' : displayName,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          group['name']!.length > 10 
-                              ? '${group['name']!.substring(0, 8)}...' 
-                              : group['name']!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                            color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
             ),
             
             const Padding(
               padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: Text(
-                "Roster",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              ),
+              child: Text("Members", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             ),
 
             // 2. Member Grid Layer (2 per row)
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100), // 100px buffer for bottom nav
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.85, // Optimized for vertical card layout
-                ),
-                itemCount: 8,
-                itemBuilder: (context, index) {
-                  // Mocking alternating status for visual testing
-                  final isOutside = index == 1;
-                  final isSleeping = index == 3;
-                  
-                  return _buildMemberTile(
-                    name: "Dr. Aravind S.",
-                    role: "Medical Officer",
-                    isOutside: isOutside,
-                    isSleeping: isSleeping,
-                    onTap: () => context.push('/movement/profile'),
-                  );
-                },
-              ),
+              child: _isLoadingMembers 
+                ? const Center(child: CircularProgressIndicator(color: AppColors.accentCyan))
+                : _members.isEmpty 
+                  ? const Center(child: Text("No personnel found", style: TextStyle(color: AppColors.textSecondary)))
+                  : GridView.builder(
+                      padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: _members.length,
+                      itemBuilder: (context, index) {
+                        final member = _members[index];
+                        return _buildMemberTile(
+                          memberData: member,
+                          // PASS THE LIVE DATA TO THE PROFILE SCREEN
+                          onTap: () => context.push('/movement/profile', extra: member),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -136,22 +204,24 @@ class _MovementScreenState extends State<MovementScreen> {
     );
   }
 
-  Widget _buildMemberTile({
-    required String name,
-    required String role,
-    required bool isOutside,
-    required bool isSleeping,
-    required VoidCallback onTap,
-  }) {
-    Color statusColor = AppColors.accentMint;
-    String statusText = "Inside";
+  Widget _buildMemberTile({required Map<String, dynamic> memberData, required VoidCallback onTap}) {
+    final String name = memberData['name'] ?? 'Unknown';
+    final String role = memberData['role'] ?? 'No Role';
+    final String activityStatus = memberData['activity_status'] ?? 'UNKNOWN';
 
-    if (isSleeping) {
-      statusColor = AppColors.textMuted;
-      statusText = "Sleeping";
-    } else if (isOutside) {
+    // Map API status to UI styling
+    Color statusColor = AppColors.textMuted;
+    String statusText = activityStatus.replaceAll('_', ' ');
+
+    if (activityStatus == 'ON_STATION') {
+      statusColor = AppColors.accentMint;
+      statusText = "Inside";
+    } else if (activityStatus == 'FIELD_MISSION') {
       statusColor = AppColors.accentAmber;
       statusText = "Outside";
+    } else if (activityStatus == 'MEDICAL_EVAC') {
+      statusColor = AppColors.accentRed;
+      statusText = "Evac";
     }
 
     return InkWell(
@@ -167,51 +237,25 @@ class _MovementScreenState extends State<MovementScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Profile Circle
             Container(
               width: 52,
               height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.cardBorder),
-              ),
+              decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.cardBorder)),
               alignment: Alignment.center,
               child: Text(
-                name[0], // First letter
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.accentCyan),
               ),
             ),
             const SizedBox(height: 12),
-            // Details
-            Text(
-              name,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 4),
-            Text(
-              role,
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(role, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
             const Spacer(),
-            // Status Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: statusColor.withOpacity(0.3)),
-              ),
-              child: Text(
-                statusText,
-                style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
-              ),
+              decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: statusColor.withOpacity(0.3))),
+              child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
