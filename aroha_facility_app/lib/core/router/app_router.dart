@@ -1,4 +1,5 @@
 // lib/core/router/app_router.dart
+import 'package:aroha_facility_app/features/cargo/presentation/screens/cargo_detail_screen.dart';
 import 'package:aroha_facility_app/features/cargo/presentation/screens/cargo_optimization_screen.dart';
 import 'package:aroha_facility_app/features/inventory/presentation/screens/inventory_dashboard_screen.dart';
 import 'package:aroha_facility_app/features/inventory/presentation/screens/item_detail_screen.dart';
@@ -32,7 +33,11 @@ GoRouter createRouter(String initialRole) {
             routes: [
               GoRoute(
                 path: 'details',
-                builder: (context, state) => const ItemDetailScreen(),
+                builder: (context, state) {
+                  // Extract the map passed from the dashboard
+                  final data = state.extra as Map<String, dynamic>? ?? {};
+                  return ItemDetailScreen(itemData: data);
+                },
               ),
               GoRoute(
                 path: 'log',
@@ -45,6 +50,12 @@ GoRouter createRouter(String initialRole) {
             pageBuilder:
                 (context, state) =>
                     const NoTransitionPage(child: CargoOptimizationScreen()),
+            routes: [
+              GoRoute(
+                path: 'details',
+                builder: (context, state) => const CargoDetailScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: '/movement',
@@ -54,7 +65,11 @@ GoRouter createRouter(String initialRole) {
             routes: [
               GoRoute(
                 path: 'profile',
-                builder: (context, state) => const MemberProfileScreen(),
+                builder: (context, state) {
+                  // Extract the live member data map
+                  final data = state.extra as Map<String, dynamic>? ?? {};
+                  return MemberProfileScreen(memberData: data);
+                },
               ),
             ],
           ),
