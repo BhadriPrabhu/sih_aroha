@@ -138,12 +138,12 @@ class AdaptiveShellScreen extends StatelessWidget {
                     right: 20,
                     bottom: 10,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(36),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                         child: Container(
                           height: 72,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceElevated.withOpacity(0.85),
                             borderRadius: BorderRadius.circular(30),

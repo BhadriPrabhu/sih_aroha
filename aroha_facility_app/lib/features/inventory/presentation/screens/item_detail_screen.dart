@@ -4,15 +4,22 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class ItemDetailScreen extends StatelessWidget {
-  const ItemDetailScreen({super.key});
+  final Map<String, dynamic> itemData;
+
+  const ItemDetailScreen({super.key, required this.itemData});
 
   @override
   Widget build(BuildContext context) {
-    // Mock Data
-    const double initialStock = 1000;
-    const double currentStock = 350;
-    const double usedStock = initialStock - currentStock;
-    const double stockPercentage = currentStock / initialStock;
+    // Extract live data safely
+    final String name = itemData['name'] ?? "Unknown Item";
+    final String category = itemData['category'] ?? "General";
+    final double currentStock = (itemData['stock_available'] as num?)?.toDouble() ?? 0.0;
+    final String criticality = itemData['criticality_rate']?.toString() ?? "N/A";
+
+    // Mocking initial/used stock for the visualizer since API only provides current stock
+    final double initialStock = currentStock > 0 ? currentStock * 1.5 : 100.0;
+    final double usedStock = initialStock - currentStock;
+    final double stockPercentage = currentStock / initialStock;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,12 +38,12 @@ class ItemDetailScreen extends StatelessWidget {
         child: Column(
           children: [
             // 1. Header Information
-            const Text("Aviation Fuel (Barrel)", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary), textAlign: TextAlign.center),
+            Text(name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary), textAlign: TextAlign.center),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(color: AppColors.accentMint.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-              child: const Text("Category: Fuel", style: TextStyle(color: AppColors.accentMint, fontWeight: FontWeight.w600, fontSize: 12)),
+              child: Text("Category: $category", style: const TextStyle(color: AppColors.accentMint, fontWeight: FontWeight.w600, fontSize: 12)),
             ),
             const SizedBox(height: 40),
 
@@ -84,9 +91,9 @@ class ItemDetailScreen extends StatelessWidget {
             // 4. Advanced Analytics Cards
             Row(
               children: [
-                Expanded(child: _buildInfoCard("Days of Supply (DOS)", "14 Days", Icons.calendar_today)),
+                Expanded(child: _buildInfoCard("Days of Supply (DOS)", "14 Days", Icons.calendar_today)), // Mock DOS for now
                 const SizedBox(width: 16),
-                Expanded(child: _buildInfoCard("Criticality Score", "0.89", Icons.warning_amber_rounded)),
+                Expanded(child: _buildInfoCard("Criticality Score", criticality, Icons.warning_amber_rounded)),
               ],
             ),
           ],
