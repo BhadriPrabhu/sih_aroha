@@ -23,6 +23,24 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
     sqlite3_exec(db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, &errPragma);
     if (errPragma) sqlite3_free(errPragma);
 
+    // Migrations must only run once.  Several of them seed data and newer
+    // migrations may contain ALTER TABLE statements, which are not safe to
+    // execute on every server restart.
+    char *migrationTableError = nullptr;
+    sqlite3_exec(
+        db,
+        "CREATE TABLE IF NOT EXISTS schema_migrations (filename TEXT PRIMARY KEY, applied_at DATETIME DEFAULT CURRENT_TIMESTAMP);",
+        nullptr,
+        nullptr,
+        &migrationTableError);
+    if (migrationTableError)
+    {
+        std::cerr << "Unable to create migration table: " << migrationTableError << std::endl;
+        sqlite3_free(migrationTableError);
+        sqlite3_close(db);
+        return;
+    }
+
     if (fs::exists(migrationsDir))
     {
         std::vector<fs::path> sqlFiles;
@@ -39,6 +57,21 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
 
         for (const auto &sqlPath : sqlFiles)
         {
+            const std::string filename = sqlPath.filename().string();
+            sqlite3_stmt *migrationQuery = nullptr;
+            bool alreadyApplied = false;
+            if (sqlite3_prepare_v2(db, "SELECT 1 FROM schema_migrations WHERE filename = ?;", -1, &migrationQuery, nullptr) == SQLITE_OK)
+            {
+                sqlite3_bind_text(migrationQuery, 1, filename.c_str(), -1, SQLITE_TRANSIENT);
+                alreadyApplied = sqlite3_step(migrationQuery) == SQLITE_ROW;
+            }
+            if (migrationQuery) sqlite3_finalize(migrationQuery);
+
+            if (alreadyApplied)
+            {
+                continue;
+            }
+
             std::cout << "Applying SQL migration: " << sqlPath.string() << std::endl;
             std::ifstream file(sqlPath);
             if (file.is_open())
@@ -53,6 +86,13 @@ void runDbMigrations(const std::string &dbPath, const std::string &migrationsDir
                 else
                 {
                     std::cout << "Successfully applied migration: " << sqlPath.filename().string() << std::endl;
+                    sqlite3_stmt *recordMigration = nullptr;
+                    if (sqlite3_prepare_v2(db, "INSERT INTO schema_migrations (filename) VALUES (?);", -1, &recordMigration, nullptr) == SQLITE_OK)
+                    {
+                        sqlite3_bind_text(recordMigration, 1, filename.c_str(), -1, SQLITE_TRANSIENT);
+                        sqlite3_step(recordMigration);
+                    }
+                    if (recordMigration) sqlite3_finalize(recordMigration);
                 }
             }
         }
