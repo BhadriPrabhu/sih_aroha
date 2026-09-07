@@ -31,12 +31,14 @@ RUN git clone --depth 1 -b v1.9.5 --recursive https://github.com/drogonframework
 WORKDIR /app
 COPY . .
 
-# Force clean build and create logs directories
-RUN mkdir -p logs /app/logs && \
+# Force clean build and create data & logs directories
+RUN mkdir -p /app/data /app/logs && \
     rm -rf build && mkdir build && cd build && \
-    mkdir -p logs && \
+    mkdir -p /app/data /app/logs && \
     cmake .. && \
     make -j$(nproc)
+
+VOLUME ["/app/data", "/app/logs"]
 
 EXPOSE 8080
 

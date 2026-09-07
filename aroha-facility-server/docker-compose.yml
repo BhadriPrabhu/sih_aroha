@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   aroha-facility-server:
     build:
@@ -8,6 +6,12 @@ services:
     container_name: aroha_facility_server
     ports:
       - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - REMOTE_SERVER_URL=http://host.docker.internal:8081
+      - PYTHON_BACKEND_URL=http://host.docker.internal:8000
     volumes:
       - ./data:/app/data
+      - ./logs:/app/logs
     restart: always

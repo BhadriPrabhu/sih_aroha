@@ -24,7 +24,7 @@ struct CreateMemberDto
     std::string teamid;
     std::string name;
     std::string role;
-    std::string activity_status{"ON_STATION"};
+    std::string activity_status{"IN"};
 
     static CreateMemberDto fromJson(const Json::Value &json)
     {
@@ -32,7 +32,7 @@ struct CreateMemberDto
         dto.teamid = json.get("teamid", "").asString();
         dto.name = json.get("name", "").asString();
         dto.role = json.get("role", "").asString();
-        dto.activity_status = json.get("activity_status", "ON_STATION").asString();
+        dto.activity_status = json.get("activity_status", "IN").asString();
         return dto;
     }
 };

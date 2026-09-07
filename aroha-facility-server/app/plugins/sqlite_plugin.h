@@ -15,7 +15,7 @@ public:
     void shutdown() override;
 
 private:
-    std::string dbPath_{"aroha_facility.db"};
+    std::string dbPath_{"/app/data/aroha_facility.db"};
     std::string migrationsDir_{"db/migrations"};
 
     void runMigrations();
