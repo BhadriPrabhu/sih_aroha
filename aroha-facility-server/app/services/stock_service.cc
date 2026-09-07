@@ -16,17 +16,6 @@ std::string analyticsServiceUrl()
 }
 }
 
-namespace
-{
-constexpr std::size_t kMinimumForecastObservations = 3;
-
-std::string analyticsServiceUrl()
-{
-    const auto &config = drogon::app().getCustomConfig();
-    return config.get("analytics_service_url", "http://127.0.0.1:8000").asString();
-}
-}
-
 std::string StockService::generateUuid()
 {
     static std::random_device rd;
