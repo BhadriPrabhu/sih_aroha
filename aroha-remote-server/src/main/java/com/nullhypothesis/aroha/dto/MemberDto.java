@@ -24,6 +24,9 @@ public class MemberDto {
     private String fullName;
 
     private String role;
+
+    @JsonProperty("status")
+    @JsonAlias({"status", "activity_status", "activityStatus"})
     private String status;
 
     @JsonProperty("updated_at")

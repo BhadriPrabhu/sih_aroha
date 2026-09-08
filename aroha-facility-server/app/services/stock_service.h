@@ -31,10 +31,21 @@ public:
     /// Retrieves all distinct categories present in stocks_master
     Json::Value getAllCategories(const std::string &stationId = "");
 
+    /// Retrieves stocks sorted from higher criticality score to lower criticality score
+    Json::Value getStocksSortedByCriticality(const std::string &stationId = "");
+
+    /// Retrieves top 5 utmost criticality score stocks
+    Json::Value getTop5CriticalStocks(const std::string &stationId = "");
+
+    /// Retrieves count of total critical items with category breakdown
+    Json::Value getCriticalItemCount(const std::string &stationId = "");
+
+    /// Retrieves stocks filtered by criticality status or threshold
+    Json::Value getCriticalStocks(const std::string &status = "HIGH", const std::string &stationId = "");
+
     /// Triggers asynchronous analytics calculation for a given stock item
     void triggerAnalytics(const std::string &stockId);
 
 private:
     std::string generateUuid();
-    void triggerAnalytics(const std::string &stockId);
 };

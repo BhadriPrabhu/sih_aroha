@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstdint>
+#include <ctime>
 
 void SyncPlugin::initAndStart(const Json::Value &config)
 {
@@ -31,11 +32,11 @@ void SyncPlugin::initAndStart(const Json::Value &config)
         syncIntervalSeconds_ = config["sync_interval_seconds"].asUInt64();
     }
 
-    LOG_INFO << "SyncPlugin initialized. Primary Remote Server URL: " << remoteServerUrl_ 
+    LOG_INFO << "SyncPlugin initialized. Central Spring Boot Server URL: " << remoteServerUrl_ 
              << " | Station ID: " << stationId_ 
-             << " | Polling Interval: " << syncIntervalSeconds_ << "s";
+             << " | Internet Check Interval: " << syncIntervalSeconds_ << "s";
 
-    // Schedule periodic polling task using Drogon app framework
+    // Schedule periodic internet connectivity check & auto-sync task
     drogon::app().getLoop()->runEvery(static_cast<double>(syncIntervalSeconds_), [this]() {
         performSyncCycle();
     });
@@ -104,12 +105,51 @@ static void ensureAllSyncTablesExist(const drogon::orm::DbClientPtr &dbClient)
     }
 }
 
+Json::Value SyncPlugin::getSyncStatus()
+{
+    Json::Value status;
+    status["station_id"] = stationId_;
+    status["remote_server_url"] = remoteServerUrl_;
+    status["internet_connected"] = lastInternetStatus_.load();
+    status["last_sync_time"] = lastSyncTime_;
+    status["is_syncing"] = isSyncing_.load();
+
+    size_t totalUnsynced = 0;
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        if (dbClient)
+        {
+            ensureAllSyncTablesExist(dbClient);
+            auto r1 = dbClient->execSqlSync("SELECT COUNT(*) AS c FROM stocks_master WHERE is_synced = 0 OR is_synced IS NULL;");
+            auto r2 = dbClient->execSqlSync("SELECT COUNT(*) AS c FROM stock_logs WHERE is_synced = 0 OR is_synced IS NULL;");
+            auto r3 = dbClient->execSqlSync("SELECT COUNT(*) AS c FROM team_details WHERE is_synced = 0 OR is_synced IS NULL;");
+            auto r4 = dbClient->execSqlSync("SELECT COUNT(*) AS c FROM member_details WHERE is_synced = 0 OR is_synced IS NULL;");
+
+            size_t u1 = r1.empty() ? 0 : r1[0]["c"].as<size_t>();
+            size_t u2 = r2.empty() ? 0 : r2[0]["c"].as<size_t>();
+            size_t u3 = r3.empty() ? 0 : r3[0]["c"].as<size_t>();
+            size_t u4 = r4.empty() ? 0 : r4[0]["c"].as<size_t>();
+
+            totalUnsynced = u1 + u2 + u3 + u4;
+            status["unsynced_stocks"] = static_cast<Json::UInt64>(u1);
+            status["unsynced_logs"] = static_cast<Json::UInt64>(u2);
+            status["unsynced_teams"] = static_cast<Json::UInt64>(u3);
+            status["unsynced_members"] = static_cast<Json::UInt64>(u4);
+        }
+    }
+    catch (...) {}
+
+    status["total_unprocessed_records"] = static_cast<Json::UInt64>(totalUnsynced);
+    return status;
+}
+
 void SyncPlugin::performSyncCycle()
 {
     bool expected = false;
     if (!isSyncing_.compare_exchange_strong(expected, true))
     {
-        return; // Already in progress
+        return; // Sync cycle already in progress
     }
 
     std::string targetUrl = remoteServerUrl_;
@@ -119,39 +159,54 @@ void SyncPlugin::performSyncCycle()
     req->setMethod(drogon::Get);
     req->setPath("/api/v1/remote/stations");
 
+    // 1. Internet Connectivity & Host Reachability Check
     client->sendRequest(req, [this, targetUrl, client](drogon::ReqResult result, const drogon::HttpResponsePtr &resp) {
-        if (result != drogon::ReqResult::Ok || !resp || resp->getStatusCode() != drogon::k200OK)
+        bool connected = (result == drogon::ReqResult::Ok && resp && resp->getStatusCode() == drogon::k200OK);
+
+        if (!connected)
         {
-            // If primary target 127.0.0.1 failed, attempt host.docker.internal fallback for Docker containers
+            // Attempt secondary local fallback URL if primary was docker host gateway or vice versa
+            std::string fallbackUrl;
             if (targetUrl.find("127.0.0.1") != std::string::npos || targetUrl.find("localhost") != std::string::npos)
             {
-                std::string dockerFallbackUrl = "http://host.docker.internal:8081";
-                auto fallbackClient = drogon::HttpClient::newHttpClient(dockerFallbackUrl);
-                auto fallbackReq = drogon::HttpRequest::newHttpRequest();
-                fallbackReq->setMethod(drogon::Get);
-                fallbackReq->setPath("/api/v1/remote/stations");
-
-                fallbackClient->sendRequest(fallbackReq, [this, dockerFallbackUrl](drogon::ReqResult fbResult, const drogon::HttpResponsePtr &fbResp) {
-                    if (fbResult == drogon::ReqResult::Ok && fbResp && fbResp->getStatusCode() == drogon::k200OK)
-                    {
-                        LOG_INFO << "[SyncPlugin] Connected to remote server via Docker host gateway: " << dockerFallbackUrl;
-                        remoteServerUrl_ = dockerFallbackUrl; // Auto-switch to working docker gateway URL
-                    }
-                    else
-                    {
-                        LOG_DEBUG << "[SyncPlugin] Remote server unreachable (" << remoteServerUrl_ << " / " << dockerFallbackUrl << "). Working in offline mode...";
-                    }
-                    isSyncing_.store(false);
-                });
-                return;
+                fallbackUrl = "http://host.docker.internal:8081";
+            }
+            else
+            {
+                fallbackUrl = "http://127.0.0.1:8081";
             }
 
-            LOG_DEBUG << "[SyncPlugin] Remote server unreachable (" << targetUrl << "). Working in offline mode...";
-            isSyncing_.store(false);
+            auto fallbackClient = drogon::HttpClient::newHttpClient(fallbackUrl);
+            auto fallbackReq = drogon::HttpRequest::newHttpRequest();
+            fallbackReq->setMethod(drogon::Get);
+            fallbackReq->setPath("/api/v1/remote/stations");
+
+            fallbackClient->sendRequest(fallbackReq, [this, fallbackUrl](drogon::ReqResult fbResult, const drogon::HttpResponsePtr &fbResp) {
+                if (fbResult == drogon::ReqResult::Ok && fbResp && fbResp->getStatusCode() == drogon::k200OK)
+                {
+                    LOG_INFO << "[SyncPlugin] Internet/Network connectivity DETECTED via fallback URL: " << fallbackUrl;
+                    remoteServerUrl_ = fallbackUrl;
+                    lastInternetStatus_.store(true);
+                }
+                else
+                {
+                    lastInternetStatus_.store(false);
+                    LOG_INFO << "[SyncPlugin] [INTERNET STATUS: OFFLINE] Central Spring Boot server unreachable (" 
+                             << remoteServerUrl_ << " / " << fallbackUrl << "). Local transactions remain safely queued in SQLite (is_synced = 0).";
+                    isSyncing_.store(false);
+                    return;
+                }
+
+                // Call internal sync processing after fallback connection succeeded
+                performSyncCycle();
+            });
             return;
         }
 
-        // Internet/Remote server connectivity detected! Gather unprocessed data
+        lastInternetStatus_.store(true);
+        LOG_INFO << "[SyncPlugin] [INTERNET STATUS: ONLINE] Internet connectivity to Spring Boot central server verified at " << targetUrl;
+
+        // 2. Internet Connectivity Confirmed: Query Unprocessed Local Records
         try
         {
             auto dbClient = drogon::app().getDbClient();
@@ -175,10 +230,10 @@ void SyncPlugin::performSyncCycle()
                 std::chrono::system_clock::now().time_since_epoch()).count();
             payload["sync_batch_id"] = "batch-" + std::to_string(nowMs);
 
-            // 1. Fetch Unsynced Stocks (with criticality_rate)
+            // Fetch Unsynced Stocks (is_synced = 0)
             Json::Value stocksArray(Json::arrayValue);
             auto stockRows = dbClient->execSqlSync(
-                "SELECT id, station_id, category, name, stock_available, criticality_rate "
+                "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, criticality_status "
                 "FROM stocks_master WHERE is_synced = 0 OR is_synced IS NULL;"
             );
             for (const auto &row : stockRows)
@@ -194,14 +249,19 @@ void SyncPlugin::performSyncCycle()
                 item["item_code"] = stkId;
                 item["item_name"] = row["name"].as<std::string>();
                 item["category"] = row["category"].as<std::string>();
+                item["stock_available"] = stockAvailableDouble;
+                item["stock_consumed"] = row["stock_consumed"].as<double>();
+                item["present_stock"] = row["present_stock"].as<double>();
                 item["total_quantity"] = static_cast<int>(stockAvailableDouble);
                 item["min_required_quantity"] = 5;
+                item["criticality_rate"] = criticalityRateDouble;
                 item["criticality_score"] = criticalityRateDouble;
+                item["criticality_status"] = row["criticality_status"].as<std::string>();
                 stocksArray.append(item);
             }
             payload["stocks"] = stocksArray;
 
-            // 2. Fetch Unsynced Stock Logs
+            // Fetch Unsynced Stock Logs (is_synced = 0)
             Json::Value logsArray(Json::arrayValue);
             auto logRows = dbClient->execSqlSync(
                 "SELECT id, stock_id, action, quantity, notes "
@@ -219,14 +279,17 @@ void SyncPlugin::performSyncCycle()
                 logItem["log_id"] = lgId;
                 logItem["stock_id"] = row["stock_id"].as<std::string>();
                 logItem["operation_type"] = row["action"].as<std::string>();
+                logItem["action"] = row["action"].as<std::string>();
                 logItem["change_qty"] = static_cast<int>(qtyDouble);
+                logItem["quantity"] = qtyDouble;
                 logItem["reason"] = notesStr.empty() ? "Logged action" : notesStr;
+                logItem["notes"] = notesStr;
                 logItem["logged_by"] = "Station Operator";
                 logsArray.append(logItem);
             }
             payload["stock_logs"] = logsArray;
 
-            // 3. Fetch Unsynced Team Details
+            // Fetch Unsynced Team Details (is_synced = 0)
             Json::Value teamsArray(Json::arrayValue);
             auto teamRows = dbClient->execSqlSync(
                 "SELECT id, teamid, teamname, active_status "
@@ -239,13 +302,15 @@ void SyncPlugin::performSyncCycle()
 
                 Json::Value teamItem;
                 teamItem["teamid"] = row["teamid"].as<std::string>();
+                teamItem["team_id"] = row["teamid"].as<std::string>();
                 teamItem["teamname"] = row["teamname"].as<std::string>();
+                teamItem["team_name"] = row["teamname"].as<std::string>();
                 teamItem["active_status"] = row["active_status"].as<std::string>();
                 teamsArray.append(teamItem);
             }
             payload["teams"] = teamsArray;
 
-            // 4. Fetch Unsynced Personnel Movement Records (member_details)
+            // Fetch Unsynced Member Details (is_synced = 0)
             Json::Value membersArray(Json::arrayValue);
             auto memberRows = dbClient->execSqlSync(
                 "SELECT id, teamid, name, role, activity_status "
@@ -258,10 +323,14 @@ void SyncPlugin::performSyncCycle()
 
                 Json::Value memberItem;
                 memberItem["memberid"] = mId;
+                memberItem["member_id"] = mId;
                 memberItem["teamid"] = row["teamid"].as<std::string>();
+                memberItem["team_id"] = row["teamid"].as<std::string>();
                 memberItem["fullname"] = row["name"].as<std::string>();
+                memberItem["full_name"] = row["name"].as<std::string>();
                 memberItem["role"] = row["role"].as<std::string>();
                 memberItem["status"] = row["activity_status"].as<std::string>();
+                memberItem["activity_status"] = row["activity_status"].as<std::string>();
                 membersArray.append(memberItem);
             }
             payload["members"] = membersArray;
@@ -269,15 +338,15 @@ void SyncPlugin::performSyncCycle()
             size_t totalUnsynced = stockIds.size() + logIds.size() + teamIds.size() + memberIds.size();
             if (totalUnsynced == 0)
             {
-                LOG_DEBUG << "[SyncPlugin] Connectivity online. All local records are up to date.";
+                LOG_INFO << "[SyncPlugin] Connectivity ONLINE. All local records are already synchronized (0 unprocessed records).";
                 isSyncing_.store(false);
                 return;
             }
 
-            LOG_INFO << "[SyncPlugin] Transmitting delta sync payload (" << totalUnsynced 
-                     << " records) to " << remoteServerUrl_ << "/api/v1/remote/sync/delta ...";
+            LOG_INFO << "[SyncPlugin] Transmitting " << totalUnsynced 
+                     << " unprocessed local records to Spring Boot server at " << targetUrl << "/api/v1/remote/sync/delta ...";
 
-            // Post delta sync payload to remote server
+            // 3. Post Delta Payload to Spring Boot Server
             auto syncReq = drogon::HttpRequest::newHttpJsonRequest(payload);
             syncReq->setMethod(drogon::Post);
             syncReq->setPath("/api/v1/remote/sync/delta");
@@ -286,29 +355,34 @@ void SyncPlugin::performSyncCycle()
                 (drogon::ReqResult syncRes, const drogon::HttpResponsePtr &syncResp) {
                 if (syncRes == drogon::ReqResult::Ok && syncResp && syncResp->getStatusCode() == drogon::k200OK)
                 {
-                    LOG_INFO << "[SyncPlugin] Delta synchronization successful! Marking " 
-                             << totalUnsynced << " local records as SYNCED.";
+                    std::time_t now = std::time(nullptr);
+                    char buf[64];
+                    std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+                    lastSyncTime_ = std::string(buf);
+
+                    LOG_INFO << "[SyncPlugin] AUTO-PUSH SUCCESSFUL! Spring Boot server acknowledged payload. Marking " 
+                             << totalUnsynced << " local records as SYNCED (is_synced = 1) in SQLite DB.";
                     markRecordsAsSynced(stockIds, logIds, teamIds, memberIds);
                 }
                 else
                 {
-                    LOG_WARN << "[SyncPlugin] Delta sync push failed or rejected by remote server. Will retry on next cycle.";
+                    LOG_WARN << "[SyncPlugin] Delta push rejected or failed on remote server. Local records will remain queued (is_synced = 0) and retried on next cycle.";
                 }
                 isSyncing_.store(false);
             });
         }
         catch (const std::exception &e)
         {
-            LOG_ERROR << "[SyncPlugin] Exception during sync processing: " << e.what();
+            LOG_ERROR << "[SyncPlugin] Exception during sync cycle execution: " << e.what();
             isSyncing_.store(false);
         }
     });
 }
 
 void SyncPlugin::markRecordsAsSynced(const std::vector<std::string> &stockIds,
-                                    const std::vector<std::string> &logIds,
-                                    const std::vector<std::string> &teamIds,
-                                    const std::vector<std::string> &memberIds)
+                                     const std::vector<std::string> &logIds,
+                                     const std::vector<std::string> &teamIds,
+                                     const std::vector<std::string> &memberIds)
 {
     try
     {
@@ -334,6 +408,6 @@ void SyncPlugin::markRecordsAsSynced(const std::vector<std::string> &stockIds,
     }
     catch (const std::exception &e)
     {
-        LOG_ERROR << "[SyncPlugin] Error updating is_synced flags: " << e.what();
+        LOG_ERROR << "[SyncPlugin] Exception updating local is_synced flags: " << e.what();
     }
 }
