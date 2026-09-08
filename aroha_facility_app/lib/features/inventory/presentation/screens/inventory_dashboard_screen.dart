@@ -30,8 +30,11 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
 
   List<dynamic> _inventoryItems = [];
   bool _isLoading = true;
-
   String _searchQuery = '';
+
+  // Telemetry Counts from the criticality API
+  int _totalCriticalItems = 0;
+  int _totalItemsCount = 0;
 
   @override
   void initState() {
@@ -42,7 +45,6 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
   Future<void> _fetchInventory() async {
     setState(() => _isLoading = true);
     try {
-      // Add timeouts to prevent infinite hanging
       final dio = Dio(
         BaseOptions(
           connectTimeout: const Duration(seconds: 10),
@@ -50,18 +52,30 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
         ),
       );
 
-      final response = await dio.get(ApiConstants.getStocks);
+      // Fetch stock list and criticality analytics concurrently
+      final responses = await Future.wait([
+        dio.get(ApiConstants.getStocks),
+        dio.get(ApiConstants.getCriticalityCount),
+      ]);
 
-      if (response.statusCode == 200) {
+      if (mounted) {
         setState(() {
-          // TARGET THE ARRAY: Safely extract the 'stocks' list from the JSON object
-          _inventoryItems = response.data['stocks'] ?? [];
+          // 1. Process stocks list
+          if (responses[0].statusCode == 200) {
+            _inventoryItems = responses[0].data['stocks'] ?? [];
+          }
+
+          // 2. Process criticality telemetry count
+          if (responses[1].statusCode == 200 && responses[1].data['success'] == true) {
+            final data = responses[1].data;
+            _totalCriticalItems = data['total_critical_items'] ?? data['critical_count'] ?? 0;
+            _totalItemsCount = data['total_items'] ?? _inventoryItems.length;
+          }
         });
       }
     } catch (e) {
-      print("Error fetching inventory: $e");
+      print("Error fetching inventory or criticality data: $e");
     } finally {
-      // ALWAYS stop the spinner, regardless of success or failure
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -74,11 +88,8 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
 
     final filteredItems =
         _inventoryItems.where((item) {
-          // 1. Check Category
           final matchesCategory =
               selectedCategory == 'All' || item['category'] == selectedCategory;
-
-          // 2. Check Search Query (case-insensitive)
           final itemName = (item['name'] ?? '').toString().toLowerCase();
           final matchesSearch = itemName.contains(_searchQuery);
 
@@ -108,8 +119,7 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                   Row(
                     children: [
                       _buildActionButton(
-                        icon:
-                            Icons.add_rounded, // Rounded icons look friendlier
+                        icon: Icons.add_rounded,
                         color: AppColors.accentCyan,
                         onPressed: () async {
                           final shouldRefresh = await context.push(
@@ -131,17 +141,19 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 20),
+
+              // STATS ROW: Dynamically reflects live server telemetry
               Row(
                 children: [
                   Expanded(
                     child: _buildStatCard(
                       title: "Inventory",
-                      value: "${_inventoryItems.length}",
+                      value: _totalItemsCount > 0
+                          ? "$_totalItemsCount"
+                          : "${_inventoryItems.length}",
                       subtitle: "Total Logged",
                       topIcon: Icons.category_rounded,
-                      bottomIcon:
-                          Icons
-                              .trending_up_rounded, // Adds that little sparkline look
+                      bottomIcon: Icons.trending_up_rounded,
                       color: AppColors.accentMint,
                     ),
                   ),
@@ -149,12 +161,10 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                   Expanded(
                     child: _buildStatCard(
                       title: "Alerts",
-                      value: "12",
+                      value: "$_totalCriticalItems", // Live critical count
                       subtitle: "Critical Stock",
                       topIcon: Icons.warning_rounded,
-                      bottomIcon:
-                          Icons
-                              .event_note_rounded, // Like the calendar in the image
+                      bottomIcon: Icons.event_note_rounded,
                       color: AppColors.accentRed,
                     ),
                   ),
@@ -302,16 +312,14 @@ Widget _buildStatCard({
   required Color color,
 }) {
   return Container(
-    height: 150, // Fixed height creates that perfect boxy/squircle proportion
+    height: 150,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: AppColors.surfaceElevated,
-      borderRadius: BorderRadius.circular(
-        32,
-      ), // Deep, soft radius like the reference image
+      borderRadius: BorderRadius.circular(32),
       border: Border.all(
         color: color.withOpacity(0.15),
-        width: 1.5, // Subtle OLED edge glow
+        width: 1.5,
       ),
       boxShadow: [
         BoxShadow(
@@ -325,7 +333,6 @@ Widget _buildStatCard({
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // TOP ROW: Title (Left) & Circular Icon (Right)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,16 +352,12 @@ Widget _buildStatCard({
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.12),
-                shape:
-                    BoxShape
-                        .circle, // Circular icon container from the reference
+                shape: BoxShape.circle,
               ),
               child: Icon(topIcon, color: color, size: 22),
             ),
           ],
         ),
-
-        // BOTTOM ROW: Value & Subtitle (Left) & Secondary Icon (Right)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -367,7 +370,7 @@ Widget _buildStatCard({
                   Text(
                     value,
                     style: const TextStyle(
-                      fontSize: 34, // Huge, bold numbers
+                      fontSize: 34,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                       height: 1.1,
@@ -389,7 +392,7 @@ Widget _buildStatCard({
             Padding(
               padding: const EdgeInsets.only(bottom: 4.0, right: 4.0),
               child: Icon(
-                bottomIcon, // Small aesthetic icon for the bottom right
+                bottomIcon,
                 color: color.withOpacity(0.5),
                 size: 24,
               ),
@@ -427,7 +430,7 @@ Widget _buildActionButton({
 
 class _InventoryItemCard extends StatelessWidget {
   final VoidCallback onTap;
-  final Map<String, dynamic> itemData; // Modified to accept live API data
+  final Map<String, dynamic> itemData;
 
   const _InventoryItemCard({required this.onTap, required this.itemData});
 
