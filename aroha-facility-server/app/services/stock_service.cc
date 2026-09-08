@@ -91,10 +91,16 @@ Json::Value StockService::createStock(const CreateStockDto &dto)
         double initialConsumed = 0.0;
         double presentStock = initialAvailable - initialConsumed;
 
+        std::string initialStatus = "MEDIUM";
+        if (dto.criticality_rate >= 0.80) initialStatus = "CRITICAL";
+        else if (dto.criticality_rate >= 0.60) initialStatus = "HIGH";
+        else if (dto.criticality_rate >= 0.35) initialStatus = "MEDIUM";
+        else initialStatus = "LOW";
+
         dbClient->execSqlSync(
             "INSERT INTO stocks_master (id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, criticality_status, essentiality_score, lead_time_days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
             stockId, dto.station_id, dto.category, dto.name, initialAvailable, initialConsumed, presentStock,
-            dto.criticality_rate, "MEDIUM", dto.essentiality_score, dto.lead_time_days
+            dto.criticality_rate, initialStatus, dto.essentiality_score, dto.lead_time_days
         );
 
         response["success"] = true;
@@ -520,3 +526,227 @@ Json::Value StockService::getAllCategories(const std::string &stationId)
     }
     return response;
 }
+
+Json::Value StockService::getStocksSortedByCriticality(const std::string &stationId)
+{
+    ensureStockTablesExist();
+    Json::Value response;
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, criticality_status, essentiality_score, lead_time_days, forecast_daily_total, forecast_mae, analytics_updated_at, updated_at FROM stocks_master";
+        if (!stationId.empty())
+        {
+            sql += " WHERE station_id = '" + stationId + "'";
+        }
+        sql += " ORDER BY criticality_rate DESC, name ASC;";
+
+        auto result = dbClient->execSqlSync(sql);
+        Json::Value list(Json::arrayValue);
+        for (const auto &row : result)
+        {
+            Json::Value item;
+            item["id"] = row["id"].as<std::string>();
+            item["station_id"] = row["station_id"].as<std::string>();
+            item["category"] = row["category"].as<std::string>();
+            item["name"] = row["name"].as<std::string>();
+            item["stock_available"] = row["stock_available"].as<double>();
+            item["stock_consumed"] = row["stock_consumed"].as<double>();
+            item["present_stock"] = row["present_stock"].as<double>();
+            item["criticality_rate"] = row["criticality_rate"].as<double>();
+            if (!row["criticality_status"].isNull()) item["criticality_status"] = row["criticality_status"].as<std::string>();
+            item["essentiality_score"] = row["essentiality_score"].as<double>();
+            item["lead_time_days"] = row["lead_time_days"].as<double>();
+            if (!row["forecast_daily_total"].isNull()) item["forecast_daily_total"] = row["forecast_daily_total"].as<double>();
+            if (!row["forecast_mae"].isNull()) item["forecast_mae"] = row["forecast_mae"].as<double>();
+            if (!row["analytics_updated_at"].isNull()) item["analytics_updated_at"] = row["analytics_updated_at"].as<std::string>();
+            item["updated_at"] = row["updated_at"].as<std::string>();
+            list.append(item);
+        }
+
+        response["success"] = true;
+        response["count"] = list.size();
+        response["stocks"] = list;
+    }
+    catch (const std::exception &e)
+    {
+        response["error"] = e.what();
+    }
+    return response;
+}
+
+Json::Value StockService::getTop5CriticalStocks(const std::string &stationId)
+{
+    ensureStockTablesExist();
+    Json::Value response;
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, criticality_status, essentiality_score, lead_time_days, forecast_daily_total, forecast_mae, analytics_updated_at, updated_at FROM stocks_master";
+        if (!stationId.empty())
+        {
+            sql += " WHERE station_id = '" + stationId + "'";
+        }
+        sql += " ORDER BY criticality_rate DESC, name ASC LIMIT 5;";
+
+        auto result = dbClient->execSqlSync(sql);
+        Json::Value list(Json::arrayValue);
+        for (const auto &row : result)
+        {
+            Json::Value item;
+            item["id"] = row["id"].as<std::string>();
+            item["station_id"] = row["station_id"].as<std::string>();
+            item["category"] = row["category"].as<std::string>();
+            item["name"] = row["name"].as<std::string>();
+            item["stock_available"] = row["stock_available"].as<double>();
+            item["stock_consumed"] = row["stock_consumed"].as<double>();
+            item["present_stock"] = row["present_stock"].as<double>();
+            item["criticality_rate"] = row["criticality_rate"].as<double>();
+            if (!row["criticality_status"].isNull()) item["criticality_status"] = row["criticality_status"].as<std::string>();
+            item["essentiality_score"] = row["essentiality_score"].as<double>();
+            item["lead_time_days"] = row["lead_time_days"].as<double>();
+            if (!row["forecast_daily_total"].isNull()) item["forecast_daily_total"] = row["forecast_daily_total"].as<double>();
+            if (!row["forecast_mae"].isNull()) item["forecast_mae"] = row["forecast_mae"].as<double>();
+            if (!row["analytics_updated_at"].isNull()) item["analytics_updated_at"] = row["analytics_updated_at"].as<std::string>();
+            item["updated_at"] = row["updated_at"].as<std::string>();
+            list.append(item);
+        }
+
+        response["success"] = true;
+        response["count"] = list.size();
+        response["top_critical_stocks"] = list;
+    }
+    catch (const std::exception &e)
+    {
+        response["error"] = e.what();
+    }
+    return response;
+}
+
+Json::Value StockService::getCriticalItemCount(const std::string &stationId)
+{
+    ensureStockTablesExist();
+    Json::Value response;
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        std::string whereClause = "";
+        if (!stationId.empty())
+        {
+            whereClause = " WHERE station_id = '" + stationId + "'";
+        }
+
+        std::string sql =
+            "SELECT "
+            "COUNT(*) AS total_items, "
+            "SUM(CASE WHEN UPPER(criticality_status) = 'CRITICAL' OR criticality_rate >= 0.80 THEN 1 ELSE 0 END) AS critical_count, "
+            "SUM(CASE WHEN (UPPER(criticality_status) = 'HIGH' OR (criticality_rate >= 0.60 AND criticality_rate < 0.80)) AND NOT (UPPER(criticality_status) = 'CRITICAL' OR criticality_rate >= 0.80) THEN 1 ELSE 0 END) AS high_count, "
+            "SUM(CASE WHEN (UPPER(criticality_status) = 'MEDIUM' OR (criticality_rate >= 0.35 AND criticality_rate < 0.60)) AND NOT (UPPER(criticality_status) IN ('CRITICAL', 'HIGH') OR criticality_rate >= 0.60) THEN 1 ELSE 0 END) AS medium_count, "
+            "SUM(CASE WHEN (UPPER(criticality_status) = 'LOW' OR criticality_rate < 0.35) AND NOT (UPPER(criticality_status) IN ('CRITICAL', 'HIGH', 'MEDIUM') OR criticality_rate >= 0.35) THEN 1 ELSE 0 END) AS low_count, "
+            "SUM(CASE WHEN UPPER(criticality_status) IN ('CRITICAL', 'HIGH') OR criticality_rate >= 0.60 THEN 1 ELSE 0 END) AS total_critical_items "
+            "FROM stocks_master" + whereClause + ";";
+
+        auto result = dbClient->execSqlSync(sql);
+        if (!result.empty())
+        {
+            auto row = result[0];
+            int totalItems = row["total_items"].as<int>();
+            int criticalCount = row["critical_count"].isNull() ? 0 : row["critical_count"].as<int>();
+            int highCount = row["high_count"].isNull() ? 0 : row["high_count"].as<int>();
+            int mediumCount = row["medium_count"].isNull() ? 0 : row["medium_count"].as<int>();
+            int lowCount = row["low_count"].isNull() ? 0 : row["low_count"].as<int>();
+            int totalCriticalItems = row["total_critical_items"].isNull() ? 0 : row["total_critical_items"].as<int>();
+
+            response["success"] = true;
+            if (!stationId.empty()) response["station_id"] = stationId;
+            response["total_critical_items"] = totalCriticalItems;
+            response["critical_count"] = criticalCount;
+            response["high_count"] = highCount;
+            response["medium_count"] = mediumCount;
+            response["low_count"] = lowCount;
+            response["total_items"] = totalItems;
+        }
+        else
+        {
+            response["success"] = true;
+            if (!stationId.empty()) response["station_id"] = stationId;
+            response["total_critical_items"] = 0;
+            response["critical_count"] = 0;
+            response["high_count"] = 0;
+            response["medium_count"] = 0;
+            response["low_count"] = 0;
+            response["total_items"] = 0;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        response["success"] = false;
+        response["error"] = e.what();
+    }
+    return response;
+}
+
+Json::Value StockService::getCriticalStocks(const std::string &status, const std::string &stationId)
+{
+    ensureStockTablesExist();
+    Json::Value response;
+    try
+    {
+        auto dbClient = drogon::app().getDbClient();
+        std::string sql = "SELECT id, station_id, category, name, stock_available, stock_consumed, present_stock, criticality_rate, criticality_status, essentiality_score, lead_time_days, forecast_daily_total, forecast_mae, analytics_updated_at, updated_at FROM stocks_master WHERE 1=1";
+        if (!stationId.empty())
+        {
+            sql += " AND station_id = '" + stationId + "'";
+        }
+
+        std::string targetStatus = status.empty() ? "HIGH" : status;
+        if (targetStatus == "CRITICAL")
+        {
+            sql += " AND (UPPER(criticality_status) = 'CRITICAL' OR criticality_rate >= 0.80)";
+        }
+        else if (targetStatus == "HIGH")
+        {
+            sql += " AND (UPPER(criticality_status) IN ('CRITICAL', 'HIGH') OR criticality_rate >= 0.60)";
+        }
+        else
+        {
+            sql += " AND (UPPER(criticality_status) = '" + targetStatus + "')";
+        }
+
+        sql += " ORDER BY criticality_rate DESC, name ASC;";
+
+        auto result = dbClient->execSqlSync(sql);
+        Json::Value list(Json::arrayValue);
+        for (const auto &row : result)
+        {
+            Json::Value item;
+            item["id"] = row["id"].as<std::string>();
+            item["station_id"] = row["station_id"].as<std::string>();
+            item["category"] = row["category"].as<std::string>();
+            item["name"] = row["name"].as<std::string>();
+            item["stock_available"] = row["stock_available"].as<double>();
+            item["stock_consumed"] = row["stock_consumed"].as<double>();
+            item["present_stock"] = row["present_stock"].as<double>();
+            item["criticality_rate"] = row["criticality_rate"].as<double>();
+            if (!row["criticality_status"].isNull()) item["criticality_status"] = row["criticality_status"].as<std::string>();
+            item["essentiality_score"] = row["essentiality_score"].as<double>();
+            item["lead_time_days"] = row["lead_time_days"].as<double>();
+            if (!row["forecast_daily_total"].isNull()) item["forecast_daily_total"] = row["forecast_daily_total"].as<double>();
+            if (!row["forecast_mae"].isNull()) item["forecast_mae"] = row["forecast_mae"].as<double>();
+            if (!row["analytics_updated_at"].isNull()) item["analytics_updated_at"] = row["analytics_updated_at"].as<std::string>();
+            item["updated_at"] = row["updated_at"].as<std::string>();
+            list.append(item);
+        }
+
+        response["success"] = true;
+        response["count"] = list.size();
+        response["critical_stocks"] = list;
+    }
+    catch (const std::exception &e)
+    {
+        response["error"] = e.what();
+    }
+    return response;
+}
+
+
