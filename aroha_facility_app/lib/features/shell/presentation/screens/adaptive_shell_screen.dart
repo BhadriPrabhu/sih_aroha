@@ -15,6 +15,7 @@ class AdaptiveShellScreen extends StatelessWidget {
     {'icon': Icons.alt_route_outlined, 'activeIcon': Icons.alt_route, 'route': '/cargo', 'label': 'Optimization'},
     {'icon': Icons.snowshoeing_outlined, 'activeIcon': Icons.snowshoeing, 'route': '/movement', 'label': 'Movement'},
     {'icon': Icons.warning_amber_rounded, 'activeIcon': Icons.warning_rounded, 'route': '/emergency', 'label': 'Alerts'},
+    {'icon': Icons.person_outline, 'activeIcon': Icons.person, 'route': '/profile', 'label': 'Profile'},
   ];
 
   int _calculateSelectedIndex(BuildContext context) {
@@ -22,6 +23,7 @@ class AdaptiveShellScreen extends StatelessWidget {
     if (location.startsWith('/cargo')) return 1;
     if (location.startsWith('/movement')) return 2;
     if (location.startsWith('/emergency')) return 3;
+    if (location.startsWith('/profile')) return 4;
     return 0;
   }
 
@@ -138,12 +140,12 @@ class AdaptiveShellScreen extends StatelessWidget {
                     right: 20,
                     bottom: 10,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(36),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                         child: Container(
                           height: 72,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceElevated.withOpacity(0.85),
                             borderRadius: BorderRadius.circular(30),

@@ -1,6 +1,8 @@
 // lib/features/inventory/presentation/screens/inventory_dashboard_screen.dart
+import 'package:aroha_facility_app/core/constants/api_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/responsive_layout.dart';
 
@@ -26,9 +28,73 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
   ];
   String selectedCategory = 'All';
 
+  List<dynamic> _inventoryItems = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+
+  // Telemetry Counts from the criticality API
+  int _totalCriticalItems = 0;
+  int _totalItemsCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInventory();
+  }
+
+  Future<void> _fetchInventory() async {
+    setState(() => _isLoading = true);
+    try {
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
+
+      // Fetch stock list and criticality analytics concurrently
+      final responses = await Future.wait([
+        dio.get(ApiConstants.getStocks),
+        dio.get(ApiConstants.getCriticalityCount),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          // 1. Process stocks list
+          if (responses[0].statusCode == 200) {
+            _inventoryItems = responses[0].data['stocks'] ?? [];
+          }
+
+          // 2. Process criticality telemetry count
+          if (responses[1].statusCode == 200 && responses[1].data['success'] == true) {
+            final data = responses[1].data;
+            _totalCriticalItems = data['total_critical_items'] ?? data['critical_count'] ?? 0;
+            _totalItemsCount = data['total_items'] ?? _inventoryItems.length;
+          }
+        });
+      }
+    } catch (e) {
+      print("Error fetching inventory or criticality data: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
+
+    final filteredItems =
+        _inventoryItems.where((item) {
+          final matchesCategory =
+              selectedCategory == 'All' || item['category'] == selectedCategory;
+          final itemName = (item['name'] ?? '').toString().toLowerCase();
+          final matchesSearch = itemName.contains(_searchQuery);
+
+          return matchesCategory && matchesSearch;
+        }).toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -52,57 +118,65 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                   ),
                   Row(
                     children: [
-                      IconButton(
-                        onPressed: () => context.push('/inventory/log'),
-                        icon: const Icon(
-                          Icons.add,
-                          color: AppColors.accentCyan,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.accentCyan.withOpacity(0.1),
-                        ),
+                      _buildActionButton(
+                        icon: Icons.add_rounded,
+                        color: AppColors.accentCyan,
+                        onPressed: () async {
+                          final shouldRefresh = await context.push(
+                            '/inventory/log',
+                          );
+                          if (shouldRefresh == true) {
+                            _fetchInventory();
+                          }
+                        },
                       ),
                       const SizedBox(width: 12),
-                      IconButton(
+                      _buildActionButton(
+                        icon: Icons.qr_code_scanner_rounded,
+                        color: AppColors.accentMint,
                         onPressed: () {},
-                        icon: const Icon(
-                          Icons.qr_code_scanner,
-                          color: AppColors.accentMint,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.accentMint.withOpacity(0.1),
-                        ),
                       ),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              // Header & Search (Keeping it concise for this snippet)
+
+              // STATS ROW: Dynamically reflects live server telemetry
               Row(
                 children: [
                   Expanded(
                     child: _buildStatCard(
-                      "Total Items",
-                      "1,204",
-                      Icons.category_outlined,
-                      AppColors.accentMint,
+                      title: "Inventory",
+                      value: _totalItemsCount > 0
+                          ? "$_totalItemsCount"
+                          : "${_inventoryItems.length}",
+                      subtitle: "Total Logged",
+                      topIcon: Icons.category_rounded,
+                      bottomIcon: Icons.trending_up_rounded,
+                      color: AppColors.accentMint,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildStatCard(
-                      "Critical",
-                      "12",
-                      Icons.warning_amber_rounded,
-                      AppColors.accentRed,
+                      title: "Alerts",
+                      value: "$_totalCriticalItems", // Live critical count
+                      subtitle: "Critical Stock",
+                      topIcon: Icons.warning_rounded,
+                      bottomIcon: Icons.event_note_rounded,
+                      color: AppColors.accentRed,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              // Search Bar
               TextField(
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
                 decoration: InputDecoration(
                   hintText: "Search supplies...",
                   hintStyle: const TextStyle(color: AppColors.textSecondary),
@@ -118,8 +192,7 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: 20,),
-              // 1. Horizontal Category Filter (Styled like image_c31a04.png)
+              const SizedBox(height: 20),
               SizedBox(
                 height: 40,
                 child: ListView.separated(
@@ -130,7 +203,6 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     final isSelected = selectedCategory == category;
-
                     return GestureDetector(
                       onTap: () => setState(() => selectedCategory = category),
                       child: Container(
@@ -171,12 +243,24 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
               ),
               const SizedBox(height: 24),
 
-              // 2. Clickable Inventory Grid/List
               Expanded(
                 child:
-                    isDesktop
+                    _isLoading
+                        ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.accentMint,
+                          ),
+                        )
+                        : filteredItems.isEmpty
+                        ? const Center(
+                          child: Text(
+                            "No items found",
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        )
+                        : isDesktop
                         ? GridView.builder(
-                          padding: EdgeInsets.only(bottom: 24),
+                          padding: const EdgeInsets.only(bottom: 24),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 3,
@@ -184,20 +268,30 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                                 mainAxisSpacing: 16,
                                 childAspectRatio: 2.5,
                               ),
-                          itemCount: 10,
+                          itemCount: filteredItems.length,
                           itemBuilder:
                               (context, index) => _InventoryItemCard(
-                                onTap: () => context.push('/inventory/details'),
+                                itemData: filteredItems[index],
+                                onTap:
+                                    () => context.push(
+                                      '/inventory/details',
+                                      extra: filteredItems[index],
+                                    ),
                               ),
                         )
                         : ListView.separated(
-                          padding: EdgeInsets.only(bottom: 100),
-                          itemCount: 10,
+                          padding: const EdgeInsets.only(bottom: 100),
+                          itemCount: filteredItems.length,
                           separatorBuilder:
                               (context, index) => const SizedBox(height: 12),
                           itemBuilder:
                               (context, index) => _InventoryItemCard(
-                                onTap: () => context.push('/inventory/details'),
+                                itemData: filteredItems[index],
+                                onTap:
+                                    () => context.push(
+                                      '/inventory/details',
+                                      extra: filteredItems[index],
+                                    ),
                               ),
                         ),
               ),
@@ -209,41 +303,98 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
   }
 }
 
-Widget _buildStatCard(String title, String value, IconData icon, Color accent) {
+Widget _buildStatCard({
+  required String title,
+  required String value,
+  required String subtitle,
+  required IconData topIcon,
+  required IconData bottomIcon,
+  required Color color,
+}) {
   return Container(
+    height: 150,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: AppColors.surfaceElevated,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: AppColors.cardBorder),
-    ),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: accent.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: accent, size: 24),
+      borderRadius: BorderRadius.circular(32),
+      border: Border.all(
+        color: color.withOpacity(0.15),
+        width: 1.5,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: color.withOpacity(0.05),
+          blurRadius: 20,
+          offset: const Offset(0, 4),
         ),
-        const SizedBox(width: 16),
-        Column(
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(topIcon, color: color, size: 22),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                      height: 1.1,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4.0, right: 4.0),
+              child: Icon(
+                bottomIcon,
+                color: color.withOpacity(0.5),
+                size: 24,
               ),
             ),
           ],
@@ -253,9 +404,35 @@ Widget _buildStatCard(String title, String value, IconData icon, Color accent) {
   );
 }
 
+Widget _buildActionButton({
+  required IconData icon,
+  required Color color,
+  required VoidCallback onPressed,
+}) {
+  return Material(
+    color: color.withOpacity(0.12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(color: color.withOpacity(0.2), width: 1),
+    ),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onPressed,
+      splashColor: color.withOpacity(0.2),
+      highlightColor: color.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Icon(icon, color: color, size: 24),
+      ),
+    ),
+  );
+}
+
 class _InventoryItemCard extends StatelessWidget {
   final VoidCallback onTap;
-  const _InventoryItemCard({required this.onTap});
+  final Map<String, dynamic> itemData;
+
+  const _InventoryItemCard({required this.onTap, required this.itemData});
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +440,7 @@ class _InventoryItemCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: AppColors.surfaceElevated,
           borderRadius: BorderRadius.circular(20),
@@ -279,31 +456,49 @@ class _InventoryItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.local_gas_station_outlined,
+                Icons.inventory_2_outlined,
                 color: AppColors.accentMint,
               ),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "Aviation Fuel (Barrel)",
-                    style: TextStyle(
+                    itemData['name'] ?? "Unknown Item",
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    "Fuel",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        itemData['category'] ?? "General",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: Text(
+                          "Stock: ${itemData['stock_available'] ?? 0}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accentCyan,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
