@@ -85,7 +85,10 @@ class CargoDetailScreen extends StatelessWidget {
               const SizedBox(height: 40),
 
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(32),
@@ -108,12 +111,12 @@ class CargoDetailScreen extends StatelessWidget {
                       highlightColor: AppColors.accentAmber,
                     ),
                     _buildDivider(),
-                    _buildDetailRow(
-                      Icons.chat_bubble_outline,
-                      "Comments",
-                      "Awaiting Icebreaker Escort",
-                    ),
-                    _buildDivider(),
+                    // _buildDetailRow(
+                    //   Icons.chat_bubble_outline,
+                    //   "Comments",
+                    //   "Awaiting Icebreaker Escort",
+                    // ),
+                    // _buildDivider(),
                     _buildDetailRow(
                       Icons.warning_amber_rounded,
                       "Caution",
@@ -122,6 +125,10 @@ class CargoDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              SizedBox(height: 20),
+              AnimatedTrackingButton(
+                onPressed: () => context.push('/cargo/details/tracking'),
               ),
               // const SizedBox(height: 12),
 
@@ -508,6 +515,130 @@ class _AnimatedCargoShipState extends State<AnimatedCargoShip>
           width: 1,
           height: double.infinity,
           color: AppColors.surfaceElevated.withOpacity(0.3),
+        ),
+      ),
+    );
+  }
+}
+
+class AnimatedTrackingButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const AnimatedTrackingButton({super.key, required this.onPressed});
+
+  @override
+  State<AnimatedTrackingButton> createState() => _AnimatedTrackingButtonState();
+}
+
+class _AnimatedTrackingButtonState extends State<AnimatedTrackingButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scannerController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Creates a continuous 2-second looping animation
+    _scannerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _scannerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 64,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        // Outer glowing border
+        border: Border.all(
+          color: AppColors.accentMint.withOpacity(0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentMint.withOpacity(0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          18,
+        ), // Slightly less than the container to fit inside the border
+        child: Stack(
+          children: [
+            // 1. OLED Deep Dark Base
+            Container(color: AppColors.surface),
+
+            // 2. Animated Tactical Scanner Beam
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _scannerController,
+                builder: (context, child) {
+                  // Moves the beam from offscreen left (-1.5) to offscreen right (1.5)
+                  final slideValue = -1.5 + (_scannerController.value * 3.0);
+
+                  return FractionalTranslation(
+                    translation: Offset(slideValue, 0),
+                    child: FractionallySizedBox(
+                      widthFactor:
+                          0.5, // The beam takes up 50% of the button width
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              AppColors.accentMint.withOpacity(0.6),
+                              AppColors.accentCyan.withOpacity(0.6),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.4, 0.6, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // 3. Interactive Foreground Layer (Text & Icon)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onPressed,
+                highlightColor: AppColors.accentMint.withOpacity(0.2),
+                splashColor: AppColors.accentCyan.withOpacity(0.3),
+                child: const Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.radar, color: AppColors.accentMint, size: 24),
+                      SizedBox(width: 12),
+                      Text(
+                        "LIVE TRACKING",
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
