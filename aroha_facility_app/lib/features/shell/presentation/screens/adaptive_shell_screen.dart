@@ -15,6 +15,7 @@ class AdaptiveShellScreen extends StatelessWidget {
     {'icon': Icons.alt_route_outlined, 'activeIcon': Icons.alt_route, 'route': '/cargo', 'label': 'Optimization'},
     {'icon': Icons.snowshoeing_outlined, 'activeIcon': Icons.snowshoeing, 'route': '/movement', 'label': 'Movement'},
     {'icon': Icons.warning_amber_rounded, 'activeIcon': Icons.warning_rounded, 'route': '/emergency', 'label': 'Alerts'},
+    {'icon': Icons.person_outline, 'activeIcon': Icons.person, 'route': '/profile', 'label': 'Profile'},
   ];
 
   int _calculateSelectedIndex(BuildContext context) {
@@ -22,6 +23,7 @@ class AdaptiveShellScreen extends StatelessWidget {
     if (location.startsWith('/cargo')) return 1;
     if (location.startsWith('/movement')) return 2;
     if (location.startsWith('/emergency')) return 3;
+    if (location.startsWith('/profile')) return 4;
     return 0;
   }
 
