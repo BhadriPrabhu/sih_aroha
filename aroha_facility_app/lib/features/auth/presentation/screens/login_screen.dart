@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/api_constants.dart';
@@ -97,12 +98,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo / Icon Area
-                  const AnimatedArohaLogo(),
+                  Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accentCyan.withOpacity(0.15), 
+                          blurRadius: 30, 
+                          spreadRadius: 5,
+                        )
+                      ],
+                    ),
+                    child: Lottie.asset(
+                      'assets/animations/satellite_globe.json',
+                      fit: BoxFit.contain,
+                      repeat: true,
+                      animate: true,
+                    ),
+                  ),
                   const SizedBox(height: 32),
                   
                   // Titles
-                  const Text("AROHA CORE", style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 2.0, color: AppColors.textPrimary)),
-                  const SizedBox(height: 8),
+                  const Text("AROHA", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, letterSpacing: 2.0, color: AppColors.textPrimary)),
+                  const SizedBox(height: 2),
                   const Text("Polar Expedition Logistics System", style: TextStyle(fontSize: 14, color: AppColors.accentCyan, letterSpacing: 0.5)),
                   const SizedBox(height: 48),
 
