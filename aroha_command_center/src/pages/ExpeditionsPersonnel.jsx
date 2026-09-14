@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, Map, Tent, Calendar, TrendingUp, Navigation, UserCheck } from 'lucide-react';
+import { Users, Map, Tent, Calendar, TrendingUp, Navigation, UserCheck, Loader2, Check } from 'lucide-react';
 
 // Mock data: Visualizing D_total = D_baseline + D_exp (from the ML doc)
 const demandImpactData = [
@@ -15,6 +15,18 @@ const demandImpactData = [
 ];
 
 export default function ExpeditionsPersonnel() {
+
+    const [planState, setPlanState] = useState('idle');
+
+    const handlePlanExpedition = () => {
+        if (planState === 'running') return;
+        setPlanState('running');
+        setTimeout(() => {
+            setPlanState('success');
+            setTimeout(() => setPlanState('idle'), 3000);
+        }, 1200);
+    };
+
     return (
         <DashboardLayout>
             <div className="max-w-[1400px] mx-auto">
@@ -25,8 +37,17 @@ export default function ExpeditionsPersonnel() {
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Expeditions & Personnel</h1>
                         <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tracking field rosters and calculating expedition-aware demand spikes.</p>
                     </div>
-                    <button className="bg-sky-600 text-white px-5 py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-sky-700 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">
-                        Plan New Expedition
+                    <button
+                        onClick={handlePlanExpedition}
+                        disabled={planState === 'running'}
+                        className={`px-5 py-2 rounded-md text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[180px] ${planState === 'running' ? 'bg-slate-200 text-slate-500 cursor-not-allowed' :
+                                planState === 'success' ? 'bg-emerald-600 text-white focus:ring-emerald-500' :
+                                    'bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500'
+                            }`}
+                    >
+                        {planState === 'idle' && 'Plan New Expedition'}
+                        {planState === 'running' && <><Loader2 size={14} className="animate-spin mr-2" /> Initializing...</>}
+                        {planState === 'success' && <><Check size={14} className="mr-2" /> Planner Ready</>}
                     </button>
                 </div>
 
@@ -153,7 +174,7 @@ function TableRow({ name, role, location, exp, status }) {
     // Tactical mapping for status colors
     const isField = status === 'Active Field';
     const isStationed = status === 'Stationed';
-    
+
     const statusColors = isField ? 'text-sky-700 bg-sky-50 border-sky-200' :
         (isStationed ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200');
 
