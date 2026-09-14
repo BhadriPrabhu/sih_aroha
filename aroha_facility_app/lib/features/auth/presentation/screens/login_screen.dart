@@ -156,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) => value == null || value.isEmpty ? "Member ID is required" : null,
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 24),
 
                   // Login Button
                   SizedBox(
@@ -165,15 +165,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentMint,
+                        backgroundColor: AppColors.accentCyan,
                         foregroundColor: AppColors.background,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 8,
-                        shadowColor: AppColors.accentMint.withOpacity(0.3),
+                        shadowColor: AppColors.accentCyan.withOpacity(0.3),
                       ),
                       child: _isLoading
                           ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.background, strokeWidth: 3))
-                          : const Text("LOGIN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                          : const Text("LOGIN", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                     ),
                   ),
                 ],
@@ -195,126 +195,8 @@ class _LoginScreenState extends State<LoginScreen> {
       filled: true,
       fillColor: AppColors.surfaceElevated,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.accentMint, width: 1.5)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.accentCyan, width: 1.5)),
       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.accentRed, width: 1.5)),
-    );
-  }
-}
-
-class AnimatedArohaLogo extends StatefulWidget {
-  const AnimatedArohaLogo({super.key});
-
-  @override
-  State<AnimatedArohaLogo> createState() => _AnimatedArohaLogoState();
-}
-
-class _AnimatedArohaLogoState extends State<AnimatedArohaLogo> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    // 3-second continuous loop for the scanning and rotation effects
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.accentMint.withOpacity(0.5), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentMint.withOpacity(0.2), 
-            blurRadius: 24, 
-            spreadRadius: 4,
-          )
-        ],
-      ),
-      child: ClipOval(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            // Calculates the up-and-down sweep of the scanner line
-            final scanPosition = (math.sin(_controller.value * 2 * math.pi) + 1) / 2;
-
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                // 1. Rotating Tactical Ring
-                Transform.rotate(
-                  angle: _controller.value * 2 * math.pi,
-                  child: CustomPaint(
-                    size: const Size(90, 90),
-                    painter: LoginEncryptionRingPainter(color: AppColors.accentCyan.withOpacity(0.4)),
-                  ),
-                ),
-                
-                // 2. Pulsing Core Snowflake
-                Transform.scale(
-                  scale: 0.9 + (0.1 * math.sin(_controller.value * 4 * math.pi)),
-                  child: const Icon(
-                    Icons.ac_unit_rounded, 
-                    size: 44, 
-                    color: AppColors.accentMint,
-                  ),
-                ),
-
-                // 3. Sweeping Biometric Laser Line
-                Positioned(
-                  top: scanPosition * 100,
-                  child: Container(
-                    width: 100,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentCyan,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accentCyan.withOpacity(0.8),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // 4. Laser Gradient Trail
-                Positioned(
-                  top: (scanPosition * 100) - 20,
-                  child: Container(
-                    width: 100,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          AppColors.accentCyan.withOpacity(0.2),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
     );
   }
 }
