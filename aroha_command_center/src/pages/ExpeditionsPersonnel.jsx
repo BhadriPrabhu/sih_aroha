@@ -35,14 +35,14 @@ export default function ExpeditionsPersonnel() {
                 <div className="flex justify-between items-end mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Expeditions & Personnel</h1>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tracking field rosters and calculating expedition-aware demand spikes.</p>
+                        <p className="text-sm font-medium text-slate-500">Tracking field rosters and calculating expedition-aware demand spikes.</p>
                     </div>
                     <button
                         onClick={handlePlanExpedition}
                         disabled={planState === 'running'}
-                        className={`px-5 py-2 rounded-md text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[180px] ${planState === 'running' ? 'bg-slate-200 text-slate-500 cursor-not-allowed' :
+                        className={`px-5 py-2 rounded-md text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[180px] ${planState === 'running' ? 'bg-slate-900 text-slate-500 cursor-not-allowed' :
                                 planState === 'success' ? 'bg-emerald-600 text-white focus:ring-emerald-500' :
-                                    'bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500'
+                                    'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-800'
                             }`}
                     >
                         {planState === 'idle' && 'Plan New Expedition'}
@@ -65,7 +65,7 @@ export default function ExpeditionsPersonnel() {
                     {/* Left: Expedition Demand Chart */}
                     <div className="col-span-8 bg-white rounded-lg p-6 shadow-sm border border-slate-200 flex flex-col">
                         <div className="mb-6 border-b border-slate-100 pb-4">
-                            <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Expedition-Aware Demand Forecast</h3>
+                            <h3 className="text-lg font-bold text-slate-900">Expedition - Aware Demand Forecast</h3>
                             <p className="text-xs text-slate-500 mt-1 font-medium">
                                 Visualizing Baseline Demand ({"$D_{baseline}$"}) vs. Additional Expedition Requirement ({"$D_{exp}$"}).
                             </p>
@@ -89,10 +89,10 @@ export default function ExpeditionsPersonnel() {
                     <div className="col-span-4 bg-slate-900 border border-slate-800 rounded-lg p-6 text-white shadow-sm flex flex-col justify-between">
                         <div>
                             <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
-                                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                                <div className="flex items-center gap-2 text-slate-400 text-lg font-semibold">
                                     <Tent size={16} className="text-sky-500" /> Active Mission
                                 </div>
-                                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-widest">
+                                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[12px] font-bold px-2 py-0.5 rounded-sm">
                                     In Progress
                                 </span>
                             </div>
@@ -120,7 +120,7 @@ export default function ExpeditionsPersonnel() {
                 {/* Bottom Row: Personnel Roster Table */}
                 <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Personnel Movement & Roster</h3>
+                        <h3 className="text-lg font-bold text-slate-900">Personnel Movement & Roster</h3>
                         <select className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-sky-500">
                             <option>All Personnel</option>
                             <option>Deployed in Field</option>
@@ -130,12 +130,12 @@ export default function ExpeditionsPersonnel() {
 
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="text-[10px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider bg-slate-50">
-                                <th className="py-3 px-4 rounded-tl-md">Personnel Name</th>
-                                <th className="py-3 px-4">Role</th>
-                                <th className="py-3 px-4">Current Location</th>
-                                <th className="py-3 px-4">Assigned Expedition</th>
-                                <th className="py-3 px-4 text-right rounded-tr-md">Status</th>
+                            <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                                <th className="py-3 px-4 font-semibold rounded-tl-md">Personnel Name</th>
+                                <th className="py-3 px-4 font-semibold">Role</th>
+                                <th className="py-3 px-4 font-semibold">Current Location</th>
+                                <th className="py-3 px-4 font-semibold">Assigned Expedition</th>
+                                <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Status</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm text-slate-700">
@@ -160,11 +160,11 @@ function KpiCard({ title, value, suffix, subtitle, icon, alert }) {
                 {icon}
             </div>
             <div>
-                <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</h3>
+                <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
                 <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
                     {value}<span className="text-sm font-medium text-slate-500 ml-1">{suffix}</span>
                 </div>
-                {subtitle && <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase">{subtitle}</p>}
+                {subtitle && <p className="text-[12px] text-slate-400 mt-1 font-medium">{subtitle}</p>}
             </div>
         </div>
     );
@@ -194,7 +194,7 @@ function TableRow({ name, role, location, exp, status }) {
                 <span className={`font-mono text-xs ${exp !== 'None' ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>{exp}</span>
             </td>
             <td className="py-3 px-4 text-right">
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${statusColors}`}>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${statusColors}`}>
                     {status}
                 </span>
             </td>

@@ -1,7 +1,7 @@
 import React from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { LineChart, Line, ResponsiveContainer, CartesianGrid, XAxis, Tooltip } from 'recharts';
-import { Anchor, Activity, Box, Radio, TrendingDown, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Anchor, Activity, Box, Radio, TrendingDown, TrendingUp, AlertCircle, CheckCircle2, ArrowUp, ArrowDown } from 'lucide-react';
 
 // Mock Data
 const trendData = [ { name: 'Mon', val: 0.6 }, { name: 'Tue', val: 0.65 }, { name: 'Wed', val: 0.72 }, { name: 'Thu', val: 0.8 }, { name: 'Fri', val: 0.89 }, { name: 'Sat', val: 0.94 } ];
@@ -58,11 +58,11 @@ export default function CommandCenterHome() {
           <div className="col-span-5 bg-white rounded-lg p-6 shadow-sm border border-slate-200 flex flex-col">
             <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Criticality Trajectory</h3>
+                <h3 className="text-lg font-bold text-slate-900">Criticality Trajectory</h3>
                 <div className="text-2xl font-bold text-slate-900 tracking-tight mt-1">
                   0.94 
-                  <span className="text-[10px] font-bold text-rose-700 ml-2 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded uppercase tracking-wider align-middle">
-                    High Risk ↗
+                  <span className="text-[10px] font-bold text-rose-700 ml-2 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded tracking-wider align-middle">
+                    High Risk
                   </span>
                 </div>
               </div>
@@ -91,18 +91,18 @@ export default function CommandCenterHome() {
           {/* Main Table Area */}
           <div className="col-span-8 bg-white rounded-lg p-6 shadow-sm border border-slate-200">
              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Active Resupply Plans (Knapsack Optimized)</h3>
-                <button className="text-xs text-sky-600 font-bold uppercase tracking-wider hover:text-sky-700 transition-colors">View All</button>
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight">Active Resupply Plans (Knapsack Optimized)</h3>
+                <button className="text-sm text-blue-600 font-medium hover:text-sky-700 transition-colors">View All</button>
              </div>
              
              <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider bg-slate-50">
-                  <th className="py-3 px-4 rounded-tl-md">Plan ID</th>
-                  <th className="py-3 px-4">Target Station</th>
-                  <th className="py-3 px-4">Fulfillment</th>
-                  <th className="py-3 px-4">Residual Risk</th>
-                  <th className="py-3 px-4 text-right rounded-tr-md">Status</th>
+                <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 tracking-wider bg-slate-50">
+                  <th className="py-3 px-4 font-semibold rounded-tl-md">Plan ID</th>
+                  <th className="py-3 px-4 font-semibold">Target Station</th>
+                  <th className="py-3 px-4 font-semibold">Fulfillment</th>
+                  <th className="py-3 px-4 font-semibold">Residual Risk</th>
+                  <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Status</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-slate-700">
@@ -116,12 +116,12 @@ export default function CommandCenterHome() {
           {/* Tactical Status Card (Eliminated all glowing purple gradients) */}
           <div className="col-span-4 bg-slate-900 border border-slate-800 rounded-lg p-6 text-white shadow-sm flex flex-col justify-between">
             <div>
-              <div className="flex items-center gap-2 text-slate-400 mb-6 text-xs font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-slate-400 mb-4 text-sm font-medium tracking-wider">
                 <Radio size={14} className="text-sky-500" /> SATCOM Delta Sync
               </div>
               <div className="text-4xl font-bold text-white mb-2 tracking-tight">
                 99.8% 
-                <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-sm ml-3 align-middle uppercase tracking-widest">
+                <span className="text-[12px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-sm ml-3 align-middle tracking-widest">
                   Online
                 </span>
               </div>
@@ -129,7 +129,7 @@ export default function CommandCenterHome() {
             </div>
             
             <div className="mt-8 bg-slate-800/50 border border-slate-700/50 rounded-md p-4">
-              <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider">
+              <div className="flex justify-between items-center text-sm font-medium tracking-wider">
                 <span className="text-slate-400">Next Sync Window</span>
                 <span className="text-white font-mono">14:00 UTC</span>
               </div>
@@ -159,17 +159,17 @@ function KpiCard({ title, value, subtitle, trend, trendValue, trendState, icon }
           {icon}
         </div>
         <div className="text-right">
-           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{title}</h3>
-           <p className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase">{subtitle}</p>
+           <h3 className="text-[14px] font-semibold text-slate-500">{title}</h3>
+           <p className="text-[12px] text-slate-400 font-medium">{subtitle}</p>
         </div>
       </div>
       <div>
         <span className="text-2xl font-bold text-slate-900 tracking-tight">{value}</span>
-        <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold uppercase tracking-wider">
-          <span className={trendColor}>
-             {isUp ? '↗' : '↘'}
+        <div className="flex items-center gap-0.5 font-medium tracking-wider">
+          <span className={`font-bold text ${trendColor}`}>
+             {isUp ? <ArrowUp size='14' strokeWidth='2' /> : <ArrowDown size='14' />}
           </span>
-          <span className="text-slate-500">{trendValue}</span>
+          <span className="text-slate-500 text-[12px]">{trendValue}</span>
         </div>
       </div>
     </div>
@@ -184,9 +184,9 @@ function TableRow({ id, target, fulfillment, risk, status }) {
   };
 
   const getStatusColor = (s) => {
-    if (s === 'Planned') return 'bg-slate-50 text-slate-700 border-slate-200';
-    if (s === 'In Transit') return 'bg-sky-50 text-sky-700 border-sky-200';
-    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (s === 'Planned') return 'text-slate-700 border-slate-200';
+    if (s === 'In Transit') return 'text-sky-700 border-sky-200';
+    return 'text-emerald-700 border-emerald-200';
   };
 
   return (
@@ -198,11 +198,11 @@ function TableRow({ id, target, fulfillment, risk, status }) {
       <td className="py-3 px-4 text-sm font-bold text-slate-900">{fulfillment}</td>
       <td className="py-3 px-4">
         <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-          {getRiskIcon(risk)} <span className="uppercase tracking-wider text-[10px] font-bold">{risk}</span>
+          {getRiskIcon(risk)} <span className="uppercase text-[12px] font-bold">{risk}</span>
         </div>
       </td>
       <td className="py-3 px-4 text-right">
-        <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(status)}`}>
+        <span className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${getStatusColor(status)}`}>
           {status}
         </span>
       </td>

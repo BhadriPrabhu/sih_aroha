@@ -32,8 +32,8 @@ export default function ForecastRecalibration() {
         {/* Page Header */}
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">System & Forecast Recalibration</h1>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Backtesting historical Mean Absolute Error (MAE) to tune exponential smoothing parameters.</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">System & Forecast Recalibration</h1>
+            <p className="text-sm font-medium text-slate-500">Backtesting historical Mean Absolute Error (MAE) to tune exponential smoothing parameters.</p>
           </div>
           <button
             onClick={handleRecalibrate}
@@ -65,8 +65,8 @@ export default function ForecastRecalibration() {
           {/* Left: MAE Comparison Chart */}
           <div className="col-span-8 bg-white rounded-lg p-6 shadow-sm border border-slate-200 flex flex-col">
             <div className="mb-6 border-b border-slate-100 pb-4">
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">MAE Improvement by Category</h3>
-              <p className="text-xs font-medium text-slate-500 mt-1 uppercase tracking-wider">Comparing forecast error before and after parameter (α) tuning.</p>
+              <h3 className="text-lg font-bold text-slate-900">MAE Improvement by Category</h3>
+              <p className="text-xs font-medium text-slate-500">Comparing forecast error before and after parameter (α) tuning.</p>
             </div>
             <div className="flex-1 w-full min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -88,9 +88,9 @@ export default function ForecastRecalibration() {
 
           {/* Right: Alpha Configuration Rules */}
           <div className="col-span-4 bg-white rounded-lg p-6 shadow-sm border border-slate-200 flex flex-col">
-            <div className="border-b border-slate-100 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Alpha (α) Heuristics</h3>
-              <p className="text-xs font-medium text-slate-500 mt-1 uppercase tracking-wider">Current static weights applied to exponential smoothing.</p>
+            <div className="border-b border-slate-100 pb-4 mb-2">
+              <h3 className="text-lg font-bold text-slate-900">Alpha (α) Heuristics</h3>
+              <p className="text-xs font-medium text-slate-500">Current static weights applied to exponential smoothing.</p>
             </div>
 
             <div className="space-y-4 flex-1">
@@ -100,7 +100,7 @@ export default function ForecastRecalibration() {
             </div>
 
             <div className="mt-4 p-4 bg-slate-50 rounded-md border border-slate-200">
-              <p className="text-[10px] text-slate-600 leading-relaxed font-bold uppercase tracking-wide text-center">
+              <p className="text-[10px] text-slate-600 leading-relaxed font-semibold text-center">
                 *Intermittent demand items (e.g., heavy machinery spares) bypass this logic and route through the Croston/SBA engine.
               </p>
             </div>
@@ -110,17 +110,17 @@ export default function ForecastRecalibration() {
         {/* Bottom Row: Tuning Log */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Parameter Backtesting Log</h3>
+            <h3 className="text-lg font-bold text-slate-900">Parameter Backtesting Log</h3>
           </div>
 
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[10px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider bg-slate-50">
-                <th className="py-3 px-4 rounded-tl-md">Category</th>
-                <th className="py-3 px-4">Previous Alpha (α)</th>
-                <th className="py-3 px-4">New Alpha (α)</th>
-                <th className="py-3 px-4">Validation Metric</th>
-                <th className="py-3 px-4 text-right rounded-tr-md">Status</th>
+              <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                <th className="py-3 px-4 font-semibold rounded-tl-md">Category</th>
+                <th className="py-3 px-4 font-semibold">Previous Alpha (α)</th>
+                <th className="py-3 px-4 font-semibold">New Alpha (α)</th>
+                <th className="py-3 px-4 font-semibold">Validation Metric</th>
+                <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Status</th>
               </tr>
             </thead>
             <tbody className="text-sm text-slate-700">
@@ -143,11 +143,11 @@ function KpiCard({ title, value, suffix, subtitle, icon }) {
         {icon}
       </div>
       <div>
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</h3>
+        <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
         <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
           {value}<span className="text-sm font-medium text-slate-500 ml-1">{suffix}</span>
         </div>
-        {subtitle && <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wider">{subtitle}</p>}
+        {subtitle && <p className="text-[12px] text-slate-400 mt-1 font-medium">{subtitle}</p>}
       </div>
     </div>
   );
@@ -158,7 +158,7 @@ function HeuristicRow({ label, desc, color }) {
     <div>
       <div className="flex items-center gap-2 mb-1">
         <div className={`w-1.5 h-1.5 rounded-sm ${color}`}></div>
-        <span className="font-bold text-xs text-slate-900 tracking-tight uppercase">{label}</span>
+        <span className="font-semibold text-sm text-slate-900">{label}</span>
       </div>
       <p className="text-xs text-slate-600 pl-3.5 font-medium">{desc}</p>
     </div>
