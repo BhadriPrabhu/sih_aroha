@@ -42,7 +42,7 @@ export default function InventoryRisk() {
         <div className="flex justify-between items-end mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Inventory & Risk Analysis</h1>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">5-factor criticality scoring and demand forecasting evaluation.</p>
+            <p className="text-sm font-medium text-slate-500">5-factor criticality scoring and demand forecasting evaluation.</p>
           </div>
           <div className="flex gap-3">
             <button
@@ -55,7 +55,7 @@ export default function InventoryRisk() {
             </button>
             <button
               onClick={handleAddStock}
-              className={`px-4 py-2 rounded-md text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center gap-2 min-w-[160px] ${addState === 'success' ? 'bg-emerald-600 text-white focus:ring-emerald-500' : 'bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500'
+              className={`px-4 py-2 rounded-md text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center gap-2 min-w-[160px] ${addState === 'success' ? 'bg-emerald-600 text-white focus:ring-emerald-500' : 'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-800'
                 }`}
             >
               {addState === 'idle' && <><Plus size={14} /> Add Manual Stock</>}
@@ -76,8 +76,8 @@ export default function InventoryRisk() {
         {/* Middle Row: Stacked Bar Chart for Risk Factors */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200 mb-6 flex flex-col">
           <div className="mb-6 border-b border-slate-100 pb-4">
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Criticality Score Breakdown (Top 4 Items)</h3>
-            <p className="text-xs font-medium text-slate-500 mt-1 uppercase tracking-wider">Visualizing Urgency, Lead Time, Expedition Impact, and Forecast Uncertainty constraints.</p>
+            <h3 className="text-lg font-bold text-slate-900">Criticality Score Breakdown (Top 4 Items)</h3>
+            <p className="text-xs font-medium text-slate-500">Visualizing Urgency, Lead Time, Expedition Impact, and Forecast Uncertainty constraints.</p>
           </div>
           <div className="w-full h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -101,7 +101,7 @@ export default function InventoryRisk() {
         {/* Bottom Row: Global Inventory Register */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Global Inventory & Forecasting Register</h3>
+            <h3 className="text-lg font-bold text-slate-900">Global Inventory & Forecasting Register</h3>
             <div className="flex gap-2">
               <select className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-sky-500">
                 <option>All Stations</option>
@@ -113,12 +113,12 @@ export default function InventoryRisk() {
 
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[10px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider bg-slate-50">
-                <th className="py-3 px-4 rounded-tl-md">Item & ID</th>
-                <th className="py-3 px-4">Station</th>
-                <th className="py-3 px-4">Forecast Method</th>
-                <th className="py-3 px-4">Days of Supply</th>
-                <th className="py-3 px-4 rounded-tr-md">Criticality</th>
+              <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                <th className="py-3 px-4 font-semibold rounded-tl-md">Item & ID</th>
+                <th className="py-3 px-4 font-semibold">Station</th>
+                <th className="py-3 px-4 font-semibold">Forecast Method</th>
+                <th className="py-3 px-4 font-semibold">Days of Supply</th>
+                <th className="py-3 px-4 font-semibold rounded-tr-md">Criticality</th>
               </tr>
             </thead>
             <tbody className="text-sm text-slate-700">
@@ -155,11 +155,11 @@ function KpiCard({ title, value, subtitle, icon, alert }) {
         {icon}
       </div>
       <div>
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</h3>
+        <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
         <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
           {value}
         </div>
-        {subtitle && <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wider">{subtitle}</p>}
+        {subtitle && <p className="text-[12px] text-slate-400 font-medium">{subtitle}</p>}
       </div>
     </div>
   );
@@ -174,8 +174,8 @@ function TableRow({ name, id, station, method, dos, score, alert }) {
       </td>
       <td className="py-3 px-4 font-medium text-slate-600">{station}</td>
       <td className="py-3 px-4">
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-sm uppercase tracking-wider inline-flex">
-          <TrendingUp size={12} className="text-slate-500" />
+        <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-700 inline-flex">
+          <TrendingUp size={14} className="text-slate-500" />
           {method}
         </div>
       </td>

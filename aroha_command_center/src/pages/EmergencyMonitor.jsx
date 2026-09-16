@@ -28,12 +28,12 @@ export default function EmergencyMonitor() {
         {/* Page Header */}
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Burst Channel Monitor</h1>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">High-priority emergency escalation and personnel extraction tracking.</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Burst Channel Monitor</h1>
+            <p className="text-sm font-medium text-slate-500">High-priority emergency escalation and personnel extraction tracking.</p>
           </div>
           <div className="flex items-center gap-2 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-md border border-rose-200">
             <Radio size={14} className="animate-pulse" />
-            <span className="text-[10px] font-bold tracking-widest uppercase">Burst Channel: Active</span>
+            <span className="text-[12px] font-semibold">Burst Channel: Active</span>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export default function EmergencyMonitor() {
         </div>
 
         {/* Middle Row: Active Emergency Banner (Tactical Dark Slate + Crimson) */}
-        <div className="bg-slate-900 border border-rose-600 border-l-4 rounded-lg p-6 shadow-sm mb-6 flex justify-between items-center">
+        <div className="bg-slate-900 border border-rose-600 border-l-4 rounded-lg p-6 shadow-sm mb-6 flex justify-between items-center gap-4">
 
           <div className="flex gap-5 items-center">
             <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-md text-rose-500">
@@ -54,7 +54,7 @@ export default function EmergencyMonitor() {
             </div>
             <div>
               <div className="flex items-center gap-3 mb-1.5">
-                <span className={`${deployState === 'dispatched' ? 'bg-emerald-600' : 'bg-rose-600'} text-white text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider transition-colors`}>
+                <span className={`${deployState === 'dispatched' ? 'bg-emerald-600' : 'bg-rose-600'} text-white text-[12px] font-semibold px-2 py-0.5 rounded-sm transition-colors`}>
                   {deployState === 'dispatched' ? 'Response Dispatched' : 'Critical Priority'}
                 </span>
                 <span className="text-slate-400 text-xs font-mono font-medium">ID: BURST-2026-092</span>
@@ -101,7 +101,7 @@ export default function EmergencyMonitor() {
         {/* Bottom Row: Emergency Log */}
         <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Historical Emergency Log</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Historical Emergency Log</h3>
             <select className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-sky-500">
               <option>Last 30 Days</option>
               <option>Year to Date</option>
@@ -110,12 +110,12 @@ export default function EmergencyMonitor() {
 
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[10px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider bg-slate-50">
-                <th className="py-3 px-4 rounded-tl-md">Event ID & Date</th>
-                <th className="py-3 px-4">Location</th>
-                <th className="py-3 px-4">Classification</th>
-                <th className="py-3 px-4">Resolution</th>
-                <th className="py-3 px-4 text-right rounded-tr-md">Status</th>
+              <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                <th className="py-3 px-4 font-semibold rounded-tl-md">Event ID & Date</th>
+                <th className="py-3 px-4 font-semibold">Location</th>
+                <th className="py-3 px-4 font-semibold">Classification</th>
+                <th className="py-3 px-4 font-semibold">Resolution</th>
+                <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Status</th>
               </tr>
             </thead>
             <tbody className="text-sm text-slate-700">
@@ -148,11 +148,11 @@ function KpiCard({ title, value, suffix, subtitle, icon, alert }) {
         {icon}
       </div>
       <div>
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</h3>
+        <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
         <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
           {value}<span className="text-sm font-medium text-slate-500 ml-1">{suffix}</span>
         </div>
-        {subtitle && <p className="text-[10px] text-slate-400 mt-2 font-medium uppercase">{subtitle}</p>}
+        {subtitle && <p className="text-[12px] text-slate-400 mt-1 font-medium">{subtitle}</p>}
       </div>
     </div>
   );
@@ -173,7 +173,7 @@ function TableRow({ id, date, location, classification, resolution, status, aler
       <td className="py-3 px-4 text-slate-700 font-medium">{classification}</td>
       <td className="py-3 px-4 text-slate-500 text-xs">{resolution}</td>
       <td className="py-3 px-4 text-right">
-        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${statusColors} ${alert ? 'animate-pulse' : ''}`}>
+        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${statusColors} ${alert ? 'animate-pulse' : ''}`}>
           {status}
         </span>
       </td>

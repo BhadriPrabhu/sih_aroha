@@ -44,16 +44,16 @@ export default function CargoResupply() {
         <div className="flex justify-between items-end mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Cargo & Resupply Optimization</h1>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Bounded knapsack asset allocation and capacity planning.</p>
+            <p className="text-sm font-medium text-slate-500">Bounded knapsack asset allocation and capacity planning.</p>
           </div>
           <button
             onClick={handleRunOptimizer}
             disabled={optimizationState === 'running'}
             className={`px-5 py-2 rounded-md text-sm font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[160px] ${optimizationState === 'running'
-                ? 'bg-slate-800 text-slate-300 cursor-not-allowed focus:ring-slate-800'
+                ? 'bg-slate-900 text-slate-300 cursor-not-allowed hover:bg-slate-800 focus:ring-slate-800'
                 : optimizationState === 'success'
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500'
-                  : 'bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500'
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-500 focus:ring-emerald-500'
+                  : 'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-800'
               }`}
           >
             {optimizationState === 'running' && (
@@ -80,8 +80,8 @@ export default function CargoResupply() {
           <div className="col-span-8 bg-white rounded-lg p-6 shadow-sm border border-slate-200 flex flex-col">
             <div className="mb-6 flex justify-between items-center border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Weight Capacity vs. Utilized Cargo</h3>
-                <p className="text-xs text-slate-500 mt-1">DP Algorithm packing efficiency across recent resupply windows.</p>
+                <h3 className="text-lg font-bold text-slate-900">Weight Capacity vs. Utilized Cargo</h3>
+                <p className="text-xs text-slate-500">DP Algorithm packing efficiency across recent resupply windows.</p>
               </div>
             </div>
             <div className="flex-1 w-full min-h-[220px]">
@@ -102,8 +102,8 @@ export default function CargoResupply() {
           {/* Right Chart: Run Summary */}
           <div className="col-span-4 bg-white rounded-lg p-6 shadow-sm border border-slate-200">
             <div className="border-b border-slate-100 pb-4 mb-4">
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Active Run: OPT-2026-BHA-01</h3>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mt-1">Destination: Bharati Station</p>
+              <h3 className="text-lg font-bold text-slate-900">Active Run: OPT-2026-BHA-01</h3>
+              <p className="text-xs font-medium text-slate-500">Destination: Bharati Station</p>
             </div>
 
             <div className="h-[140px] flex justify-center items-center relative">
@@ -141,20 +141,20 @@ export default function CargoResupply() {
         <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight uppercase">Knapsack Optimizer Selections</h3>
-              <p className="text-xs font-medium text-slate-500 mt-1 uppercase tracking-wider">Objective: Maximize risk reduction subject to capacity constraints.</p>
+              <h3 className="text-lg font-bold text-slate-900">Knapsack Optimizer Selections</h3>
+              <p className="text-xs font-medium text-slate-500">Objective: Maximize risk reduction subject to capacity constraints.</p>
             </div>
           </div>
 
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[10px] font-bold text-slate-500 border-b border-slate-200 uppercase tracking-wider bg-slate-50">
-                <th className="py-3 px-4 rounded-tl-md">Item Name</th>
-                <th className="py-3 px-4">Criticality Input</th>
-                <th className="py-3 px-4">Required Qty</th>
-                <th className="py-3 px-4">Selected Qty</th>
-                <th className="py-3 px-4">Fulfillment</th>
-                <th className="py-3 px-4 text-right rounded-tr-md">Optimization Status</th>
+              <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                <th className="py-3 px-4 font-semibold rounded-tl-md">Item Name</th>
+                <th className="py-3 px-4 font-semibold">Criticality Input</th>
+                <th className="py-3 px-4 font-semibold">Required Qty</th>
+                <th className="py-3 px-4 font-semibold">Selected Qty</th>
+                <th className="py-3 px-4 font-semibold">Fulfillment</th>
+                <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Optimization Status</th>
               </tr>
             </thead>
             <tbody className="text-sm text-slate-700">
@@ -190,7 +190,7 @@ function KpiCard({ title, value, suffix, subtitle, icon }) {
         {icon}
       </div>
       <div>
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</h3>
+        <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
         <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
           {value}<span className="text-sm font-medium text-slate-500 ml-1">{suffix}</span>
         </div>
@@ -221,7 +221,7 @@ function TableRow({ name, criticality, required, selected, fulfillment, status, 
         </div>
       </td>
       <td className="py-3 px-4 text-right">
-        <div className="flex items-center justify-end gap-2 text-[10px] uppercase font-bold tracking-wider text-slate-700">
+        <div className="flex items-center justify-end gap-2 text-[10px] font-bold text-slate-700">
           {status}
           {statusIcon}
         </div>
