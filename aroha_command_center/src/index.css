@@ -2,4 +2,50 @@
 
 @theme {
   --font-sans: "Poppins", sans-serif;
+  --font-logo: "Fraunces", system-ui;
+}
+
+/* Tactical Industrial Overrides */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* High-contrast text selection */
+  ::selection {
+    background-color: #0284c7; /* Sky 600 */
+    color: #ffffff;
+  }
+
+  /* Slim, industrial scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f8fafc; /* Slate 50 */
+    border-left: 1px solid #e2e8f0;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* Slate 300 */
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* Slate 400 */
+  }
+
+  /* Dark mode scrollbars for sidebar */
+  aside ::-webkit-scrollbar-track {
+    background: #0f172a; /* Slate 900 */
+    border-left: none;
+  }
+
+  aside ::-webkit-scrollbar-thumb {
+    background: #334155; /* Slate 700 */
+  }
 }
