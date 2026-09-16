@@ -7,19 +7,14 @@ import CargoResupply from '../pages/CargoResupply';
 import ExpeditionsPersonnel from '../pages/ExpeditionsPersonnel';
 import EmergencyMonitor from '../pages/EmergencyMonitor';
 import ForecastRecalibration from '../pages/ForecastRecalibration';
+import SuperAdminManagement from '../pages/SuperAdminManagement';
+import useAuthStore from '../store/useAuthStore';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const currentUserRole = 'LOGISTICS_COMMANDER'; 
-  const isAuthenticated = true;
+  const { user, isAuthenticated } = useAuthStore();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(currentUserRole)) {
-    // If they don't have clearance, kick them back to a safe screen
-    return <Navigate to="/" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" replace />;
 
   return children;
 };
@@ -27,48 +22,51 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Public Route */}
       <Route path="/login" element={<Login />} />
 
-      {/* Protected Central Command Routes (Requires Admin/Super Admin clearance) */}
       <Route path="/" element={
-        <ProtectedRoute allowedRoles={['NCPOR_DIRECTOR', 'LOGISTICS_COMMANDER']}>
+        <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
           <CommandCenterHome />
         </ProtectedRoute>
       } />
-      
+
       <Route path="/inventory" element={
-        <ProtectedRoute allowedRoles={['NCPOR_DIRECTOR', 'LOGISTICS_COMMANDER', 'STATION_COMMANDER_BHA']}>
+        <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
           <InventoryRisk />
         </ProtectedRoute>
       } />
-      
+
       <Route path="/cargo" element={
-        <ProtectedRoute allowedRoles={['NCPOR_DIRECTOR', 'LOGISTICS_COMMANDER']}>
+        <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
           <CargoResupply />
         </ProtectedRoute>
       } />
-      
+
       <Route path="/expeditions" element={
-        <ProtectedRoute allowedRoles={['NCPOR_DIRECTOR', 'LOGISTICS_COMMANDER', 'EXPEDITION_LEAD']}>
+        <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE']}>
           <ExpeditionsPersonnel />
         </ProtectedRoute>
       } />
-      
+
       <Route path="/alerts" element={
-        <ProtectedRoute> {/* Accessible by all authenticated operational staff */}
+        <ProtectedRoute>
           <EmergencyMonitor />
         </ProtectedRoute>
       } />
-      
-      {/* Super Admin ONLY Route */}
+
+      {/* Super Admin ONLY Routes */}
       <Route path="/settings" element={
-        <ProtectedRoute allowedRoles={['NCPOR_DIRECTOR']}>
+        <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
           <ForecastRecalibration />
         </ProtectedRoute>
       } />
-      
-      {/* Fallback routing */}
+
+      <Route path="/access-control" element={
+        <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+          <SuperAdminManagement />
+        </ProtectedRoute>
+      } />
+
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
