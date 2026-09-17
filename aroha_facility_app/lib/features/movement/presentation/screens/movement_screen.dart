@@ -15,10 +15,10 @@ class MovementScreen extends StatefulWidget {
 class _MovementScreenState extends State<MovementScreen> {
   List<dynamic> _teams = [];
   List<dynamic> _members = [];
-  
+
   bool _isLoadingTeams = true;
   bool _isLoadingMembers = true;
-  
+
   String _selectedTeamId = 'ALL';
 
   @override
@@ -30,8 +30,7 @@ class _MovementScreenState extends State<MovementScreen> {
   Future<void> _fetchTeamsAndInitialMembers() async {
     try {
       final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
-      
-      // Fetch teams and all members concurrently
+
       final responses = await Future.wait([
         dio.get(ApiConstants.getTeams),
         dio.get(ApiConstants.getMembers),
@@ -39,27 +38,41 @@ class _MovementScreenState extends State<MovementScreen> {
 
       if (mounted) {
         setState(() {
-          // Inject 'All Members' as the first virtual team
           _teams = [
-            {'teamid': 'ALL', 'teamname': 'All Members'}
+            {'teamid': 'ALL', 'teamname': 'All Members'},
           ];
-          
-          if (responses[0].statusCode == 200) {
+          if (responses[0].statusCode == 200)
             _teams.addAll(responses[0].data['teams'] ?? []);
-          }
-          
-          if (responses[1].statusCode == 200) {
+          if (responses[1].statusCode == 200)
             _members = responses[1].data['members'] ?? [];
-          }
-          
+
           _isLoadingTeams = false;
           _isLoadingMembers = false;
         });
       }
     } catch (e) {
-      print("Error fetching movement data: $e");
       if (mounted) {
         setState(() {
+          _teams = [
+            {'teamid': 'ALL', 'teamname': 'All Members'},
+            {'teamid': 'T1', 'teamname': 'Alpha Team'},
+          ];
+
+          _members = [
+            {
+              'id': 'm1',
+              'name': 'Sarah Connor',
+              'role': 'Lead Geologist',
+              'activity_status': 'ON_STATION',
+            },
+            {
+              'id': 'm2',
+              'name': 'Marcus Wright',
+              'role': 'Field Medic',
+              'activity_status': 'FIELD_MISSION',
+            },
+          ];
+
           _isLoadingTeams = false;
           _isLoadingMembers = false;
         });
@@ -75,128 +88,211 @@ class _MovementScreenState extends State<MovementScreen> {
 
     try {
       final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
-      final url = teamId == 'ALL' 
-          ? ApiConstants.getMembers 
-          : ApiConstants.getTeamMembers(teamId);
-          
+      final url =
+          teamId == 'ALL'
+              ? ApiConstants.getMembers
+              : ApiConstants.getTeamMembers(teamId);
       final response = await dio.get(url);
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _members = response.data['members'] ?? [];
-        });
-      }
+      if (response.statusCode == 200)
+        setState(() => _members = response.data['members'] ?? []);
     } catch (e) {
-      print("Error fetching members for team $teamId: $e");
+      print("Error fetching members: $e");
     } finally {
-      if (mounted) {
-        setState(() => _isLoadingMembers = false);
+      if (mounted){
+        setState(() {
+          _isLoadingMembers = false;
+          _selectedTeamId = teamId;
+        });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // --- DYNAMIC THEME AWARENESS ---
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final primaryText =
+        Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+    final secondaryText =
+        Theme.of(context).textTheme.bodyMedium?.color ??
+        AppColors.textSecondary;
+    final surfaceColor =
+        Theme.of(context).cardTheme.color ?? AppColors.surfaceObsidian;
+    final borderColor =
+        Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 32, 24, 16),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
               child: Text(
                 "Personnel Movement",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: primaryText,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
-            
-            // 1. Group Selector (Instagram Stories Style)
+
+            // 1. Group Selector (High Contrast & Large Touch Targets)
             SizedBox(
               height: 100,
-              child: _isLoadingTeams 
-                ? const Center(child: CircularProgressIndicator(color: AppColors.accentMint))
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _teams.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 16),
-                    itemBuilder: (context, index) {
-                      final team = _teams[index];
-                      final isSelected = _selectedTeamId == team['teamid'];
-                      final String displayName = team['teamname'] ?? 'Unknown';
-                      final String avatarLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
-
-                      return GestureDetector(
-                        onTap: () => _fetchMembersForTeam(team['teamid']),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 64,
-                              height: 64,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected ? AppColors.accentMint : AppColors.cardBorder,
-                                  width: isSelected ? 3 : 1,
-                                ),
-                                color: AppColors.surfaceElevated,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                avatarLetter,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected ? AppColors.accentMint : AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              displayName.length > 10 ? '${displayName.substring(0, 8)}...' : displayName,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+              child:
+                  _isLoadingTeams
+                      ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.polarCyan,
                         ),
-                      );
-                    },
-                  ),
-            ),
-            
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: Text("Members", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      )
+                      : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _teams.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 16),
+                        itemBuilder: (context, index) {
+                          final team = _teams[index];
+                          final isSelected = _selectedTeamId == team['teamid'];
+                          final String displayName =
+                              team['teamname'] ?? 'Unknown';
+                          final String avatarLetter =
+                              displayName.isNotEmpty
+                                  ? displayName[0].toUpperCase()
+                                  : '?';
+
+                          return GestureDetector(
+                            onTap: () => _fetchMembersForTeam(team['teamid']),
+                            behavior:
+                                HitTestBehavior
+                                    .opaque, // Expands hit area for gloves
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height:
+                                      64, // Human Factors: Minimum 64px for avatars
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color:
+                                          isSelected
+                                              ? (isLight
+                                                  ? Colors.black
+                                                  : AppColors.polarCyan)
+                                              : borderColor,
+                                      width:
+                                          isSelected
+                                              ? (isLight ? 4 : 3)
+                                              : (isLight ? 2 : 1),
+                                    ),
+                                    color:
+                                        isLight && !isSelected
+                                            ? Colors.white
+                                            : surfaceColor,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    avatarLetter,
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                      color:
+                                          isSelected
+                                              ? (isLight
+                                                  ? Colors.black
+                                                  : AppColors.polarCyan)
+                                              : secondaryText,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  displayName.length > 10
+                                      ? '${displayName.substring(0, 8)}...'
+                                      : displayName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.w800
+                                            : FontWeight.w600,
+                                    color:
+                                        isSelected
+                                            ? primaryText
+                                            : secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
             ),
 
-            // 2. Member Grid Layer (2 per row)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+              child: Text(
+                "ACTIVE ROSTER",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: secondaryText,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+
+            // 2. Member Grid Layer
             Expanded(
-              child: _isLoadingMembers 
-                ? const Center(child: CircularProgressIndicator(color: AppColors.accentCyan))
-                : _members.isEmpty 
-                  ? const Center(child: Text("No personnel found", style: TextStyle(color: AppColors.textSecondary)))
-                  : GridView.builder(
-                      padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.85,
+              child:
+                  _isLoadingMembers
+                      ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.polarCyan,
+                        ),
+                      )
+                      : _members.isEmpty
+                      ? Center(
+                        child: Text(
+                          "No personnel found",
+                          style: TextStyle(color: secondaryText),
+                        ),
+                      )
+                      : GridView.builder(
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          bottom: 120,
+                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.85,
+                            ),
+                        itemCount: _members.length,
+                        itemBuilder: (context, index) {
+                          return _buildMemberTile(
+                            memberData: _members[index],
+                            isLight: isLight,
+                            pText: primaryText,
+                            sText: secondaryText,
+                            surface: surfaceColor,
+                            border: borderColor,
+                            onTap:
+                                () => context.push(
+                                  '/movement/profile',
+                                  extra: _members[index],
+                                ),
+                          );
+                        },
                       ),
-                      itemCount: _members.length,
-                      itemBuilder: (context, index) {
-                        final member = _members[index];
-                        return _buildMemberTile(
-                          memberData: member,
-                          // PASS THE LIVE DATA TO THE PROFILE SCREEN
-                          onTap: () => context.push('/movement/profile', extra: member),
-                        );
-                      },
-                    ),
             ),
           ],
         ),
@@ -204,35 +300,42 @@ class _MovementScreenState extends State<MovementScreen> {
     );
   }
 
-  Widget _buildMemberTile({required Map<String, dynamic> memberData, required VoidCallback onTap}) {
+  Widget _buildMemberTile({
+    required Map<String, dynamic> memberData,
+    required bool isLight,
+    required Color pText,
+    required Color sText,
+    required Color surface,
+    required Color border,
+    required VoidCallback onTap,
+  }) {
     final String name = memberData['name'] ?? 'Unknown';
     final String role = memberData['role'] ?? 'No Role';
     final String activityStatus = memberData['activity_status'] ?? 'UNKNOWN';
 
-    // Map API status to UI styling
-    Color statusColor = AppColors.textMuted;
+    Color statusColor = AppColors.textMeta;
     String statusText = activityStatus.replaceAll('_', ' ');
 
     if (activityStatus == 'ON_STATION') {
-      statusColor = AppColors.accentMint;
-      statusText = "Inside";
+      statusColor = AppColors.statusNominal;
+      statusText = "ON BASE";
     } else if (activityStatus == 'FIELD_MISSION') {
-      statusColor = AppColors.accentAmber;
-      statusText = "Outside";
+      statusColor = AppColors.statusWarning;
+      statusText = "IN FIELD";
     } else if (activityStatus == 'MEDICAL_EVAC') {
-      statusColor = AppColors.accentRed;
-      statusText = "Evac";
+      statusColor = AppColors.statusCritical;
+      statusText = "EVAC";
     }
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.cardBorder),
+          color: surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border, width: isLight ? 2 : 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -240,22 +343,65 @@ class _MovementScreenState extends State<MovementScreen> {
             Container(
               width: 52,
               height: 52,
-              decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.cardBorder)),
+              decoration: BoxDecoration(
+                color: isLight ? Colors.white : AppColors.canvasBlack,
+                shape: BoxShape.circle,
+                border: Border.all(color: border, width: isLight ? 2 : 1),
+              ),
               alignment: Alignment.center,
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.accentCyan),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: pText,
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: pText,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 4),
-            Text(role, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              role,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: sText,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             const Spacer(),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(20), border: Border.all(color: statusColor.withOpacity(0.3))),
-              child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: statusColor.withOpacity(isLight ? 1.0 : 0.5),
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                statusText,
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ),
           ],
         ),
