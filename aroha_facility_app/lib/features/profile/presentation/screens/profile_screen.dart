@@ -1,6 +1,7 @@
 // lib/features/profile/presentation/screens/profile_screen.dart
 import 'dart:math';
 import 'dart:ui';
+import 'package:aroha_facility_app/core/theme/theme_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -87,15 +88,24 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _isOutsideStation ? AppColors.accentAmber : AppColors.accentCyan;
+    // 1. Read the current theme context dynamically
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    
+    // 2. Extract the dynamic colors from our AppTheme
+    final surfaceColor = Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+    final primaryText = Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+    final secondaryText = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+    final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.borderHairline;
+    
+    final statusColor = _isOutsideStation ? AppColors.statusWarning : AppColors.polarCyan;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // 0. Tactical Grid Background
           Positioned.fill(
-            child: CustomPaint(painter: TacticalGridPainter()),
+            child: CustomPaint(painter: TacticalGridPainter(
+              color: primaryText.withOpacity(isLight ? 0.2 : 0.08)
+            )),
           ),
           
           SafeArea(
@@ -104,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Personnel Profile", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  Text("Personnel Profile", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: primaryText)),
                   const SizedBox(height: 32),
 
                   // 1. Animated Radar Avatar & Vitals
@@ -117,17 +127,28 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Static Dashed Outer Ring
+                              AnimatedBuilder(
+                                animation: _radarController,
+                                builder: (context, child) {
+                                  return Transform.rotate(
+                                    angle: _radarController.value * 2 * pi,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                               CustomPaint(
                                 size: const Size(130, 130),
                                 painter: TacticalBorderPainter(color: statusColor),
                               ),
-                              // Solid Avatar Core
                               Container(
                                 width: 100,
                                 height: 100,
                                 decoration: BoxDecoration(
-                                  color: AppColors.surfaceElevated,
+                                  color: surfaceColor, // Dynamic
                                   shape: BoxShape.circle,
                                   border: Border.all(color: statusColor, width: 2),
                                   boxShadow: [
@@ -148,24 +169,23 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Text(_userName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        Text(_userName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryText)), // Dynamic
                         const SizedBox(height: 4),
-                        Text("$_userRole  •  $_memberId", style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-                        const SizedBox(height: 16),
+                        Text("$_userRole  •  $_memberId", style: TextStyle(fontSize: 14, color: secondaryText)), // Dynamic
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 32),
 
                   // 2. High-Tech Sliding Segmented Toggle
-                  const Text("Operational Status", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                  Text("Operational Status", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: secondaryText)), // Dynamic
                   const SizedBox(height: 12),
                   Container(
                     height: 64,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceElevated,
+                      color: surfaceColor, // Dynamic
                       borderRadius: BorderRadius.circular(32),
-                      border: Border.all(color: AppColors.cardBorder),
+                      border: Border.all(color: borderColor, width: isLight ? 2 : 1), // Dynamic
                     ),
                     child: Stack(
                       children: [
@@ -178,10 +198,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           right: _isOutsideStation ? 4 : MediaQuery.of(context).size.width / 2 - 28,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: _isOutsideStation ? AppColors.accentAmber.withOpacity(0.15) : AppColors.accentMint.withOpacity(0.15),
+                              color: _isOutsideStation ? AppColors.statusWarning.withOpacity(0.15) : AppColors.statusNominal.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(28),
                               border: Border.all(
-                                color: _isOutsideStation ? AppColors.accentAmber.withOpacity(0.5) : AppColors.accentMint.withOpacity(0.5),
+                                color: _isOutsideStation ? AppColors.statusWarning.withOpacity(0.5) : AppColors.statusNominal.withOpacity(0.5),
                               ),
                             ),
                           ),
@@ -193,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                 onTap: () => _toggleStatus(false),
                                 behavior: HitTestBehavior.opaque,
                                 child: Center(
-                                  child: Text("ON STATION", style: TextStyle(fontWeight: FontWeight.bold, color: !_isOutsideStation ? AppColors.accentMint : AppColors.textSecondary)),
+                                  child: Text("ON STATION", style: TextStyle(fontWeight: FontWeight.bold, color: !_isOutsideStation ? AppColors.statusNominal : secondaryText)),
                                 ),
                               ),
                             ),
@@ -202,7 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                 onTap: () => _toggleStatus(true),
                                 behavior: HitTestBehavior.opaque,
                                 child: Center(
-                                  child: Text("FIELD MISSION", style: TextStyle(fontWeight: FontWeight.bold, color: _isOutsideStation ? AppColors.accentAmber : AppColors.textSecondary)),
+                                  child: Text("FIELD MISSION", style: TextStyle(fontWeight: FontWeight.bold, color: _isOutsideStation ? AppColors.statusWarning : secondaryText)),
                                 ),
                               ),
                             ),
@@ -211,17 +231,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 40),
 
                   // 3. Glowing Concentric Telemetry Rings
-                  const Text("Activity Telemetry", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                  Text("Activity Telemetry", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: secondaryText)), // Dynamic
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceElevated.withOpacity(0.8),
+                      color: surfaceColor, // Dynamic
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.cardBorder),
+                      border: Border.all(color: borderColor, width: isLight ? 2 : 1), // Dynamic
                     ),
                     child: Row(
                       children: [
@@ -237,6 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                   ring1Value: 0.85,
                                   ring2Value: 0.65,
                                   ring3Value: 0.40,
+                                  bgColor: isLight ? const Color(0xFFE2E8F0) : AppColors.surfaceElevated, // Dynamic Ring Track
                                 ),
                               );
                             },
@@ -247,20 +268,60 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildLegendItem("Efficiency", "85%", AppColors.accentCyan),
+                              _buildLegendItem("Efficiency", "85%", AppColors.polarCyan, secondaryText),
                               const SizedBox(height: 16),
-                              _buildLegendItem("Station Hrs", "65%", AppColors.accentMint),
+                              _buildLegendItem("Station Hrs", "65%", AppColors.statusNominal, secondaryText),
                               const SizedBox(height: 16),
-                              _buildLegendItem("Field Hrs", "40%", AppColors.accentAmber),
+                              _buildLegendItem("Field Hrs", "40%", AppColors.statusWarning, secondaryText),
                             ],
                           ),
                         )
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 40),
 
-                  // 4. Animated Hazard/Disconnect Button
+                  // 4. Terminal Settings
+                  Text("Terminal Settings", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: secondaryText)), // Dynamic
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: surfaceColor, // Dynamic
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: borderColor, width: isLight ? 2 : 1), // Dynamic
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("High-Albedo Mode", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryText)), // Dynamic
+                            const SizedBox(height: 4),
+                            Text("Max contrast for snow blindness", style: TextStyle(fontSize: 12, color: secondaryText)), // Dynamic
+                          ],
+                        ),
+                        ValueListenableBuilder<ThemeMode>(
+                          valueListenable: ThemeNotifier.themeMode, // Defined in your notifier[cite: 8]
+                          builder: (context, currentMode, child) {
+                            final isHighAlbedo = currentMode == ThemeMode.light;
+                            return Switch(
+                              value: isHighAlbedo,
+                              onChanged: ThemeNotifier.toggleTheme,
+                              activeColor: AppColors.canvasBlack,
+                              activeTrackColor: AppColors.polarCyan,
+                              inactiveThumbColor: AppColors.textMeta,
+                              inactiveTrackColor: AppColors.surfaceElevated,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // 5. Logout Button
                   AnimatedHazardButton(onPressed: _handleLogout),
                 ],
               ),
@@ -271,17 +332,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildLegendItem(String label, String value, Color color) {
+  Widget _buildLegendItem(String label, String value, Color iconColor, Color textColor) {
     return Row(
       children: [
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: color.withOpacity(0.5), blurRadius: 6)]),
+          decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle, boxShadow: [BoxShadow(color: iconColor.withOpacity(0.5), blurRadius: 6)]),
         ),
         const SizedBox(width: 12),
-        Expanded(child: Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13))),
-        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+        Expanded(child: Text(label, style: TextStyle(color: textColor, fontSize: 13))), // Dynamic text color
+        Text(value, style: TextStyle(color: iconColor, fontWeight: FontWeight.bold, fontSize: 14)),
       ],
     );
   }
@@ -383,54 +444,14 @@ class WarningStripePainter extends CustomPainter {
   bool shouldRepaint(covariant WarningStripePainter oldDelegate) => true;
 }
 
-class VitalsWavePainter extends CustomPainter {
-  final double progress;
+class TacticalGridPainter extends CustomPainter {
   final Color color;
-
-  VitalsWavePainter({required this.progress, required this.color});
+  TacticalGridPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 2);
-
-    final path = Path();
-    final width = size.width;
-    final centerY = size.height / 2;
-
-    // Shift wave across screen based on progress
-    final shift = progress * width;
-
-    path.moveTo(0, centerY);
-    for (double i = 0; i <= width; i++) {
-      // Create an ECG-like pulse at specific intervals
-      double y = centerY;
-      double normalizedX = (i + shift) % width;
-      
-      if (normalizedX > width * 0.4 && normalizedX < width * 0.6) {
-        // Sine wave pulse in the middle
-        y += sin((normalizedX - width * 0.4) * (pi / (width * 0.1))) * (size.height / 2);
-      }
-      
-      path.lineTo(i, y);
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant VitalsWavePainter oldDelegate) => true;
-}
-
-class TacticalGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.textSecondary.withOpacity(0.08)
       ..strokeWidth = 1.0;
 
     const double spacing = 30.0;
@@ -441,7 +462,7 @@ class TacticalGridPainter extends CustomPainter {
     }
   }
   @override
-  bool shouldRepaint(covariant TacticalGridPainter oldDelegate) => false;
+  bool shouldRepaint(covariant TacticalGridPainter oldDelegate) => true;
 }
 
 class ConcentricRingsPainter extends CustomPainter {
@@ -449,8 +470,9 @@ class ConcentricRingsPainter extends CustomPainter {
   final double ring1Value;
   final double ring2Value;
   final double ring3Value;
+  final Color bgColor;
 
-  ConcentricRingsPainter({required this.progress, required this.ring1Value, required this.ring2Value, required this.ring3Value});
+  ConcentricRingsPainter({required this.progress, required this.ring1Value, required this.ring2Value, required this.ring3Value, required this.bgColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -459,7 +481,7 @@ class ConcentricRingsPainter extends CustomPainter {
     const spacing = 14.0;
 
     void drawRing(double radius, double value, Color color) {
-      final bgPaint = Paint()..color = AppColors.surface..style = PaintingStyle.stroke..strokeWidth = strokeWidth;
+      final bgPaint = Paint()..color =  bgColor..style = PaintingStyle.stroke..strokeWidth = strokeWidth;
       canvas.drawCircle(center, radius, bgPaint);
 
       final sweepAngle = 2 * pi * (value * progress);
