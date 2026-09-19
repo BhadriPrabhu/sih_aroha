@@ -10,6 +10,7 @@ import 'package:aroha_facility_app/features/inventory/presentation/screens/log_i
 import 'package:aroha_facility_app/features/movement/presentation/screens/member_profile_screen.dart';
 import 'package:aroha_facility_app/features/movement/presentation/screens/movement_screen.dart';
 import 'package:aroha_facility_app/features/profile/presentation/screens/profile_screen.dart';
+import 'package:aroha_facility_app/features/profile/presentation/screens/sync_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/shell/presentation/screens/adaptive_shell_screen.dart';
@@ -95,6 +96,10 @@ GoRouter createRouter(String initialRole) {
             pageBuilder:
                 (context, state) =>
                     const NoTransitionPage(child: ProfileScreen()),
+          ),
+          GoRoute(
+            path: '/sync',
+            builder: (context, state) => const SyncScreen(),
           ),
         ],
       ),

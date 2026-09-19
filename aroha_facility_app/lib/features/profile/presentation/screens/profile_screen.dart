@@ -231,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
 
                   // 3. Glowing Concentric Telemetry Rings
                   Text("Activity Telemetry", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: secondaryText)), // Dynamic
@@ -279,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
 
                   // 4. Terminal Settings
                   Text("Terminal Settings", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: secondaryText)), // Dynamic
@@ -297,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("High-Albedo Mode", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryText)), // Dynamic
+                            Text("High-Albedo Mode", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryText)), // Dynamic
                             const SizedBox(height: 4),
                             Text("Max contrast for snow blindness", style: TextStyle(fontSize: 12, color: secondaryText)), // Dynamic
                           ],
@@ -319,7 +319,36 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       ],
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 16),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => context.push('/sync'), // Route to the new Sync Screen
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: surfaceColor,
+                        foregroundColor: primaryText,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: isLight ? Colors.black : AppColors.polarCyan.withOpacity(0.5), width: isLight ? 2 : 1),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.sync, color: isLight ? Colors.black : AppColors.polarCyan, size: 28),
+                          const SizedBox(width: 12),
+                          Text(
+                            "DATA UPLINK & SYNC", 
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.0, color: primaryText)
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   // 5. Logout Button
                   AnimatedHazardButton(onPressed: _handleLogout),
@@ -336,9 +365,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle, boxShadow: [BoxShadow(color: iconColor.withOpacity(0.5), blurRadius: 6)]),
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: iconColor, shape: BoxShape.circle, boxShadow: [BoxShadow(color: iconColor.withOpacity(0.5), blurRadius: 2)]),
         ),
         const SizedBox(width: 12),
         Expanded(child: Text(label, style: TextStyle(color: textColor, fontSize: 13))), // Dynamic text color
@@ -485,7 +514,7 @@ class ConcentricRingsPainter extends CustomPainter {
       canvas.drawCircle(center, radius, bgPaint);
 
       final sweepAngle = 2 * pi * (value * progress);
-      final fgPaint = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = strokeWidth..strokeCap = StrokeCap.round..maskFilter = const MaskFilter.blur(BlurStyle.solid, 3);
+      final fgPaint = Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = strokeWidth..strokeCap = StrokeCap.round..maskFilter = const MaskFilter.blur(BlurStyle.solid, 0);
       canvas.drawArc(Rect.fromCircle(center: center, radius: radius), -pi / 2, sweepAngle, false, fgPaint);
     }
 
