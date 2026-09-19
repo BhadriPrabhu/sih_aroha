@@ -1,10 +1,11 @@
 // lib/features/inventory/presentation/screens/inventory_dashboard_screen.dart
-import 'package:aroha_facility_app/core/constants/api_constants.dart';
+// import 'package:aroha_facility_app/core/constants/api_constants.dart';
+import 'package:aroha_facility_app/core/data/local_database_helper.dart';
 import 'package:aroha_facility_app/core/presentation/widgets/tactical_card.dart';
 import 'package:aroha_facility_app/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
+// import 'package:dio/dio.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/responsive_layout.dart';
 
@@ -44,63 +45,91 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
     _fetchInventory();
   }
 
+  // Future<void> _fetchInventory() async {
+  //   setState(() => _isLoading = true);
+  //   try {
+  //     final dio = Dio(
+  //       BaseOptions(
+  //         connectTimeout: const Duration(seconds: 10),
+  //         receiveTimeout: const Duration(seconds: 10),
+  //       ),
+  //     );
+
+  //     // Fetch stock list and criticality analytics concurrently
+  //     final responses = await Future.wait([
+  //       dio.get(ApiConstants.getStocks),
+  //       dio.get(ApiConstants.getCriticalityCount),
+  //     ]);
+
+  //     if (mounted) {
+  //       setState(() {
+  //         // 1. Process stocks list - wrapped in List.from() to prevent unmodifiable list errors!
+  //         if (responses[0].statusCode == 200) {
+  //           _inventoryItems = List.from(responses[0].data['stocks'] ?? []);
+  //         }
+
+  //         // 2. Process criticality telemetry count
+  //         if (responses[1].statusCode == 200 && responses[1].data['success'] == true) {
+  //           final data = responses[1].data;
+  //           _totalCriticalItems = data['total_critical_items'] ?? data['critical_count'] ?? 0;
+  //           _totalItemsCount = data['total_items'] ?? _inventoryItems.length;
+  //         }
+  //       });
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching inventory or criticality data: $e");
+  //     // Ensure the list is initialized if the API fails entirely
+  //     if (mounted) setState(() => _inventoryItems = []);
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         // TEMPORARY: Inject mock items here so they render even if the API throws an error
+  //         _inventoryItems.addAll([
+  //           {
+  //             'name': 'Mock Oxygen Tanks',
+  //             'category': 'Survivals',
+  //             'stock_available': 5,
+  //           },
+  //           {
+  //             'name': 'Mock Drone Batteries',
+  //             'category': 'Spares',
+  //             'stock_available': 35,
+  //           }
+  //         ]);
+
+  //         // Force the total count to update for the UI test
+  //         _totalItemsCount = _inventoryItems.length;
+  //         _isLoading = false;
+  //       });
+  //     }
+  //   }
+  // }
+
   Future<void> _fetchInventory() async {
     setState(() => _isLoading = true);
     try {
-      final dio = Dio(
-        BaseOptions(
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
-        ),
-      );
+      // 1. Seed dummy data (only runs once if DB is empty)
+      await LocalDatabaseHelper.instance.seedDummyData();
 
-      // Fetch stock list and criticality analytics concurrently
-      final responses = await Future.wait([
-        dio.get(ApiConstants.getStocks),
-        dio.get(ApiConstants.getCriticalityCount),
-      ]);
+      // 2. Fetch directly from our local SQLite cache
+      final localData = await LocalDatabaseHelper.instance.getCachedInventory();
 
       if (mounted) {
         setState(() {
-          // 1. Process stocks list - wrapped in List.from() to prevent unmodifiable list errors!
-          if (responses[0].statusCode == 200) {
-            _inventoryItems = List.from(responses[0].data['stocks'] ?? []);
-          }
+          _inventoryItems = localData;
+          _totalItemsCount = _inventoryItems.length;
 
-          // 2. Process criticality telemetry count
-          if (responses[1].statusCode == 200 && responses[1].data['success'] == true) {
-            final data = responses[1].data;
-            _totalCriticalItems = data['total_critical_items'] ?? data['critical_count'] ?? 0;
-            _totalItemsCount = data['total_items'] ?? _inventoryItems.length;
-          }
+          // Calculate critical items (stock <= 10)
+          _totalCriticalItems =
+              _inventoryItems
+                  .where((item) => (item['stock_available'] as num) <= 10)
+                  .length;
         });
       }
     } catch (e) {
-      print("Error fetching inventory or criticality data: $e");
-      // Ensure the list is initialized if the API fails entirely
-      if (mounted) setState(() => _inventoryItems = []); 
+      print("Offline fetch error: $e");
     } finally {
-      if (mounted) {
-        setState(() {
-          // TEMPORARY: Inject mock items here so they render even if the API throws an error
-          _inventoryItems.addAll([
-            {
-              'name': 'Mock Oxygen Tanks',
-              'category': 'Survivals',
-              'stock_available': 5, 
-            },
-            {
-              'name': 'Mock Drone Batteries',
-              'category': 'Spares',
-              'stock_available': 35, 
-            }
-          ]);
-
-          // Force the total count to update for the UI test
-          _totalItemsCount = _inventoryItems.length;
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -110,18 +139,25 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
 
     // --- DYNAMIC THEME AWARENESS ---
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final primaryText = Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
-    final secondaryText = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
-    final surfaceColor = Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
-    final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
+    final primaryText =
+        Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+    final secondaryText =
+        Theme.of(context).textTheme.bodyMedium?.color ??
+        AppColors.textSecondary;
+    final surfaceColor =
+        Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+    final borderColor =
+        Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
 
-    final filteredItems = _inventoryItems.where((item) {
-      final matchesCategory = selectedCategory == 'All' || item['category'] == selectedCategory;
-      final itemName = (item['name'] ?? '').toString().toLowerCase();
-      final matchesSearch = itemName.contains(_searchQuery);
-      return matchesCategory && matchesSearch;
-    }).toList();
+    final filteredItems =
+        _inventoryItems.where((item) {
+          final matchesCategory =
+              selectedCategory == 'All' || item['category'] == selectedCategory;
+          final itemName = (item['name'] ?? '').toString().toLowerCase();
+          final matchesSearch = itemName.contains(_searchQuery);
+          return matchesCategory && matchesSearch;
+        }).toList();
 
     return Scaffold(
       // backgroundColor removed! Let the Theme engine handle it.
@@ -137,7 +173,11 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                 children: [
                   Text(
                     "Station Inventory",
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: primaryText),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: primaryText,
+                    ),
                   ),
                   Row(
                     children: [
@@ -145,7 +185,9 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                         icon: Icons.add,
                         color: AppColors.polarCyan,
                         onPressed: () async {
-                          final shouldRefresh = await context.push('/inventory/log');
+                          final shouldRefresh = await context.push(
+                            '/inventory/log',
+                          );
                           if (shouldRefresh == true) _fetchInventory();
                         },
                       ),
@@ -168,7 +210,10 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                     child: _buildStatCard(
                       context: context,
                       title: "Inventory",
-                      value: _totalItemsCount > 0 ? "$_totalItemsCount" : "${_inventoryItems.length}",
+                      value:
+                          _totalItemsCount > 0
+                              ? "$_totalItemsCount"
+                              : "${_inventoryItems.length}",
                       subtitle: "Total Logged",
                       topIcon: Icons.category,
                       bottomIcon: Icons.trending_up,
@@ -193,7 +238,9 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
 
               // THEME-AWARE SEARCH BAR
               TextField(
-                onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                onChanged:
+                    (value) =>
+                        setState(() => _searchQuery = value.toLowerCase()),
                 style: TextStyle(color: primaryText),
                 decoration: InputDecoration(
                   hintText: "Search supplies...",
@@ -202,16 +249,27 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                   filled: true,
                   fillColor: surfaceColor,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12), // Matched to tactical 12px
-                    borderSide: BorderSide(color: borderColor, width: isLight ? 2 : 1),
+                    borderRadius: BorderRadius.circular(
+                      12,
+                    ), // Matched to tactical 12px
+                    borderSide: BorderSide(
+                      color: borderColor,
+                      width: isLight ? 2 : 1,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: borderColor, width: isLight ? 2 : 1),
+                    borderSide: BorderSide(
+                      color: borderColor,
+                      width: isLight ? 2 : 1,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.polarCyan, width: 2),
+                    borderSide: BorderSide(
+                      color: AppColors.polarCyan,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -223,11 +281,12 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 10),
+                  separatorBuilder:
+                      (context, index) => const SizedBox(width: 10),
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     final isSelected = selectedCategory == category;
-                    
+
                     // Brutalist High-Contrast Chip Logic
                     final chipBg = isSelected ? primaryText : surfaceColor;
                     final chipText = isSelected ? scaffoldBg : secondaryText;
@@ -236,18 +295,27 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                     return GestureDetector(
                       onTap: () => setState(() => selectedCategory = category),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: chipBg,
-                          borderRadius: BorderRadius.circular(12), // Matched to tactical 12px
-                          border: Border.all(color: chipBorder, width: isLight && !isSelected ? 2 : 1),
+                          borderRadius: BorderRadius.circular(
+                            12,
+                          ), // Matched to tactical 12px
+                          border: Border.all(
+                            color: chipBorder,
+                            width: isLight && !isSelected ? 2 : 1,
+                          ),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           category.toUpperCase(), // Uppercase for tactical feel
                           style: TextStyle(
                             color: chipText,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight:
+                                isSelected ? FontWeight.w800 : FontWeight.w600,
                             fontSize: 13,
                             letterSpacing: 0.5,
                           ),
@@ -260,19 +328,35 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
               const SizedBox(height: 24),
 
               Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.polarCyan))
-                    : filteredItems.isEmpty
-                        ? Center(child: Text("No items found", style: TextStyle(color: secondaryText)))
-                        : ListView.separated(
-                            padding: const EdgeInsets.only(bottom: 120),
-                            itemCount: filteredItems.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) => _InventoryItemCard(
-                              itemData: filteredItems[index],
-                              onTap: () => context.push('/inventory/details', extra: filteredItems[index]),
-                            ),
+                child:
+                    _isLoading
+                        ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.polarCyan,
                           ),
+                        )
+                        : filteredItems.isEmpty
+                        ? Center(
+                          child: Text(
+                            "No items found",
+                            style: TextStyle(color: secondaryText),
+                          ),
+                        )
+                        : ListView.separated(
+                          padding: const EdgeInsets.only(bottom: 120),
+                          itemCount: filteredItems.length,
+                          separatorBuilder:
+                              (context, index) => const SizedBox(height: 12),
+                          itemBuilder:
+                              (context, index) => _InventoryItemCard(
+                                itemData: filteredItems[index],
+                                onTap:
+                                    () => context.push(
+                                      '/inventory/details',
+                                      extra: filteredItems[index],
+                                    ),
+                              ),
+                        ),
               ),
             ],
           ),
@@ -292,10 +376,14 @@ Widget _buildStatCard({
   required Color color,
 }) {
   final isLight = Theme.of(context).brightness == Brightness.light;
-  final surfaceColor = Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
-  final primaryText = Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
-  final secondaryText = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
-  final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
+  final surfaceColor =
+      Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+  final primaryText =
+      Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+  final secondaryText =
+      Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+  final borderColor =
+      Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
 
   return Container(
     height: 150,
@@ -320,16 +408,26 @@ Widget _buildStatCard({
               padding: const EdgeInsets.only(top: 8.0, left: 4.0),
               child: Text(
                 title.toUpperCase(),
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 0.5),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: secondaryText,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isLight ? const Color(0xFF000000) : color.withOpacity(0.12),
+                color:
+                    isLight ? const Color(0xFF000000) : color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(topIcon, color: isLight ? const Color(0xFFFFFFFF) : color, size: 20),
+              child: Icon(
+                topIcon,
+                color: isLight ? const Color(0xFFFFFFFF) : color,
+                size: 20,
+              ),
             ),
           ],
         ),
@@ -345,7 +443,8 @@ Widget _buildStatCard({
                   Text(
                     value,
                     style: TextStyle(
-                      fontFamily: AppTypography.monoFont, // Telemetry font for numbers
+                      fontFamily:
+                          AppTypography.monoFont, // Telemetry font for numbers
                       fontSize: 34,
                       fontWeight: FontWeight.w900,
                       color: primaryText,
@@ -356,14 +455,23 @@ Widget _buildStatCard({
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondaryText),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: secondaryText,
+                    ),
                   ),
                 ],
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 4.0, right: 4.0),
-              child: Icon(bottomIcon, color: isLight ? const Color(0xFF000000) : color.withOpacity(0.5), size: 24),
+              child: Icon(
+                bottomIcon,
+                color:
+                    isLight ? const Color(0xFF000000) : color.withOpacity(0.5),
+                size: 24,
+              ),
             ),
           ],
         ),
@@ -453,7 +561,9 @@ class _InventoryItemCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      (itemData['category'] ?? "General").toString().toUpperCase(),
+                      (itemData['category'] ?? "General")
+                          .toString()
+                          .toUpperCase(),
                       style: AppTypography.label,
                     ),
                     Row(
