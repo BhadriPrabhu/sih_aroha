@@ -46,18 +46,18 @@ export default function EmergencyMonitor() {
         </div>
 
         {/* Middle Row: Active Emergency Banner */}
-        <div className="bg-slate-900 border border-rose-600 border-l-4 rounded-lg p-4 sm:p-6 shadow-sm mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="bg-slate-900 p-4 sm:p-6 shadow-sm mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
 
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start sm:items-center">
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-md text-rose-500 shrink-0">
+            {/* <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-md text-rose-500 shrink-0">
               {deployState === 'dispatched' ? <Check size={28} className="text-emerald-500" /> : <ShieldAlert size={28} className="animate-pulse" />}
-            </div>
+            </div> */}
             <div>
               <div className="flex items-center gap-3 mb-1.5">
                 <span className={`${deployState === 'dispatched' ? 'bg-emerald-600' : 'bg-rose-600'} text-white text-[12px] font-semibold px-2 py-0.5 rounded-sm transition-colors`}>
                   {deployState === 'dispatched' ? 'Response Dispatched' : 'Critical Priority'}
                 </span>
-                <span className="text-slate-400 text-xs font-mono font-medium">ID: BURST-2026-092</span>
+                {/* <span className="text-slate-400 text-xs font-mono font-medium">ID: BURST-2026-092</span> */}
               </div>
               <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight mb-1">Severe Generator Failure (Code 4)</h2>
               <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">Field Camp Alpha (Expedition EXP-2026-03) has lost primary and secondary heating power. Ambient temperature dropping rapidly.</p>
@@ -169,7 +169,7 @@ function TableRow({ id, date, location, classification, resolution, status, aler
     <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
       <td className="py-3 px-4">
         <div className="font-mono text-xs font-semibold text-slate-900">{id}</div>
-        <div className="text-[10px] font-medium text-slate-500 mt-0.5 uppercase">{date}</div>
+        <div className="text-[10px] font-medium text-slate-500">{date}</div>
       </td>
       <td className="py-3 px-4 font-medium text-slate-600">{location}</td>
       <td className="py-3 px-4 text-slate-700 font-medium">{classification}</td>
