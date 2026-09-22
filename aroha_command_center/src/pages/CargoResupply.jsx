@@ -41,15 +41,15 @@ export default function CargoResupply() {
       <div className="max-w-[1400px] mx-auto">
 
         {/* Page Header */}
-        <div className="flex justify-between items-end mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Cargo & Resupply Optimization</h1>
-            <p className="text-sm font-medium text-slate-500">Bounded knapsack asset allocation and capacity planning.</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-1">Cargo & Resupply Optimization</h1>
+            <p className="text-xs sm:text-sm font-medium text-slate-500">Bounded knapsack asset allocation and capacity planning.</p>
           </div>
           <button
             onClick={handleRunOptimizer}
             disabled={optimizationState === 'running'}
-            className={`px-5 py-2 rounded-md text-sm font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[160px] ${optimizationState === 'running'
+            className={`w-full sm:w-auto px-5 py-2 rounded-md text-sm font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center min-w-[160px] ${optimizationState === 'running'
                 ? 'bg-slate-900 text-slate-300 cursor-not-allowed hover:bg-slate-800 focus:ring-slate-800'
                 : optimizationState === 'success'
                   ? 'bg-emerald-500 text-white hover:bg-emerald-500 focus:ring-emerald-500'
@@ -67,7 +67,7 @@ export default function CargoResupply() {
         </div>
 
         {/* Top KPI Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <KpiCard title="Max Weight Constraint" value="15,000" subtitle="Total Fleet Capacity" suffix="kg" icon={<Scale size={18} />} />
           <KpiCard title="Avg. Capacity Util." value="95.8" subtitle="Knapsack Efficiency" suffix="%" icon={<Box size={18} />} />
           <KpiCard title="Critical Fulfillment" value="89" subtitle="High-Risk Items Satisfied" suffix="%" icon={<CheckCircle2 size={18} />} />
@@ -75,12 +75,12 @@ export default function CargoResupply() {
         </div>
 
         {/* Middle Row: Charts */}
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
           {/* Left Chart: Capacity Over Time */}
-          <div className="col-span-8 bg-white rounded-lg p-6 shadow-sm border border-slate-200 flex flex-col">
+          <div className="col-span-1 lg:col-span-8 bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-slate-200 flex flex-col">
             <div className="mb-6 flex justify-between items-center border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Weight Capacity vs. Utilized Cargo</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Weight Capacity vs. Utilized Cargo</h3>
                 <p className="text-xs text-slate-500">DP Algorithm packing efficiency across recent resupply windows.</p>
               </div>
             </div>
@@ -91,7 +91,6 @@ export default function CargoResupply() {
                   <XAxis dataKey="run" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748B', fontWeight: 500 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748B', fontWeight: 500 }} />
                   <Tooltip cursor={{ fill: '#F8FAFC' }} contentStyle={{ borderRadius: '6px', border: '1px solid #E2E8F0', boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)' }} />
-                  {/* Replaced purple with tactical slate and industrial blue */}
                   <Bar dataKey="capacity" name="Max Capacity (kg)" fill="#CBD5E1" radius={[2, 2, 0, 0]} barSize={36} />
                   <Bar dataKey="used" name="Utilized Weight (kg)" fill="#0F172A" radius={[2, 2, 0, 0]} barSize={36} />
                 </BarChart>
@@ -100,9 +99,9 @@ export default function CargoResupply() {
           </div>
 
           {/* Right Chart: Run Summary */}
-          <div className="col-span-4 bg-white rounded-lg p-6 shadow-sm border border-slate-200">
+          <div className="col-span-1 lg:col-span-4 bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-slate-200">
             <div className="border-b border-slate-100 pb-4 mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Active Run: OPT-2026-BHA-01</h3>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Active Run: OPT-2026-BHA-01</h3>
               <p className="text-xs font-medium text-slate-500">Destination: Bharati Station</p>
             </div>
 
@@ -138,61 +137,63 @@ export default function CargoResupply() {
         </div>
 
         {/* Bottom Row: DP Knapsack Output Table */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-6">
             <div>
               <h3 className="text-lg font-bold text-slate-900">Knapsack Optimizer Selections</h3>
               <p className="text-xs font-medium text-slate-500">Objective: Maximize risk reduction subject to capacity constraints.</p>
             </div>
           </div>
 
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
-                <th className="py-3 px-4 font-semibold rounded-tl-md">Item Name</th>
-                <th className="py-3 px-4 font-semibold">Criticality Input</th>
-                <th className="py-3 px-4 font-semibold">Required Qty</th>
-                <th className="py-3 px-4 font-semibold">Selected Qty</th>
-                <th className="py-3 px-4 font-semibold">Fulfillment</th>
-                <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Optimization Status</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm text-slate-700">
-              <TableRow
-                name="Medical Kit" criticality="0.94" required="20" selected="20"
-                fulfillment="100%" status="Fully Fulfilled" statusIcon={<CheckCircle2 size={14} className="text-emerald-600" />}
-              />
-              <TableRow
-                name="Winter Diesel Bulk (Fuel)" criticality="0.89" required="500 L" selected="400 L"
-                fulfillment="80%" status="Partially Fulfilled" statusIcon={<AlertTriangle size={14} className="text-amber-500" />}
-              />
-              <TableRow
-                name="Ration Pack B (Food)" criticality="0.61" required="300 kg" selected="180 kg"
-                fulfillment="60%" status="Partially Fulfilled" statusIcon={<AlertTriangle size={14} className="text-amber-500" />}
-              />
-              <TableRow
-                name="Spare Part A" criticality="0.22" required="10" selected="0"
-                fulfillment="0%" status="Deprioritized (Capacity)" statusIcon={<XCircle size={14} className="text-rose-600" />} disabled
-              />
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                  <th className="py-3 px-4 font-semibold rounded-tl-md">Item Name</th>
+                  <th className="py-3 px-4 font-semibold">Criticality Input</th>
+                  <th className="py-3 px-4 font-semibold">Required Qty</th>
+                  <th className="py-3 px-4 font-semibold">Selected Qty</th>
+                  <th className="py-3 px-4 font-semibold">Fulfillment</th>
+                  <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Optimization Status</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm text-slate-700">
+                <TableRow
+                  name="Medical Kit" criticality="0.94" required="20" selected="20"
+                  fulfillment="100%" status="Fully Fulfilled" statusIcon={<CheckCircle2 size={14} className="text-emerald-600" />}
+                />
+                <TableRow
+                  name="Winter Diesel Bulk (Fuel)" criticality="0.89" required="500 L" selected="400 L"
+                  fulfillment="80%" status="Partially Fulfilled" statusIcon={<AlertTriangle size={14} className="text-amber-500" />}
+                />
+                <TableRow
+                  name="Ration Pack B (Food)" criticality="0.61" required="300 kg" selected="180 kg"
+                  fulfillment="60%" status="Partially Fulfilled" statusIcon={<AlertTriangle size={14} className="text-amber-500" />}
+                />
+                <TableRow
+                  name="Spare Part A" criticality="0.22" required="10" selected="0"
+                  fulfillment="0%" status="Deprioritized (Capacity)" statusIcon={<XCircle size={14} className="text-rose-600" />} disabled
+                />
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </DashboardLayout>
   );
 }
 
-// Sub-components - REFACTORED FOR CRISP GEOMETRY AND MONOTONE ICONS
+// Sub-components
 function KpiCard({ title, value, suffix, subtitle, icon }) {
   return (
-    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex items-start gap-4">
+    <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-sm flex items-start gap-3 sm:gap-4">
       <div className="p-2 border border-slate-200 rounded-md bg-slate-50 text-slate-600">
         {icon}
       </div>
       <div>
         <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
-        <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
-          {value}<span className="text-sm font-medium text-slate-500 ml-1">{suffix}</span>
+        <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-none">
+          {value}<span className="text-xs sm:text-sm font-medium text-slate-500 ml-1">{suffix}</span>
         </div>
         {subtitle && <p className="text-[10px] text-slate-400 mt-2 font-medium">{subtitle}</p>}
       </div>
@@ -214,7 +215,6 @@ function TableRow({ name, criticality, required, selected, fulfillment, status, 
       <td className="py-3 px-4">
         <div className="flex items-center gap-3">
           <div className="w-16 bg-slate-200 rounded-sm h-1.5 overflow-hidden">
-            {/* Replaced purple with industrial sky blue */}
             <div className="bg-sky-600 h-1.5 rounded-sm" style={{ width: fulfillment }}></div>
           </div>
           <span className="text-xs font-bold text-slate-700">{fulfillment}</span>

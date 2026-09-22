@@ -1,8 +1,11 @@
 // lib/features/inventory/presentation/screens/inventory_dashboard_screen.dart
-import 'package:aroha_facility_app/core/constants/api_constants.dart';
+// import 'package:aroha_facility_app/core/constants/api_constants.dart';
+import 'package:aroha_facility_app/core/data/local_database_helper.dart';
+import 'package:aroha_facility_app/core/presentation/widgets/tactical_card.dart';
+import 'package:aroha_facility_app/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
+// import 'package:dio/dio.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/responsive_layout.dart';
 
@@ -42,43 +45,91 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
     _fetchInventory();
   }
 
+  // Future<void> _fetchInventory() async {
+  //   setState(() => _isLoading = true);
+  //   try {
+  //     final dio = Dio(
+  //       BaseOptions(
+  //         connectTimeout: const Duration(seconds: 10),
+  //         receiveTimeout: const Duration(seconds: 10),
+  //       ),
+  //     );
+
+  //     // Fetch stock list and criticality analytics concurrently
+  //     final responses = await Future.wait([
+  //       dio.get(ApiConstants.getStocks),
+  //       dio.get(ApiConstants.getCriticalityCount),
+  //     ]);
+
+  //     if (mounted) {
+  //       setState(() {
+  //         // 1. Process stocks list - wrapped in List.from() to prevent unmodifiable list errors!
+  //         if (responses[0].statusCode == 200) {
+  //           _inventoryItems = List.from(responses[0].data['stocks'] ?? []);
+  //         }
+
+  //         // 2. Process criticality telemetry count
+  //         if (responses[1].statusCode == 200 && responses[1].data['success'] == true) {
+  //           final data = responses[1].data;
+  //           _totalCriticalItems = data['total_critical_items'] ?? data['critical_count'] ?? 0;
+  //           _totalItemsCount = data['total_items'] ?? _inventoryItems.length;
+  //         }
+  //       });
+  //     }
+  //   } catch (e) {
+  //     print("Error fetching inventory or criticality data: $e");
+  //     // Ensure the list is initialized if the API fails entirely
+  //     if (mounted) setState(() => _inventoryItems = []);
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() {
+  //         // TEMPORARY: Inject mock items here so they render even if the API throws an error
+  //         _inventoryItems.addAll([
+  //           {
+  //             'name': 'Mock Oxygen Tanks',
+  //             'category': 'Survivals',
+  //             'stock_available': 5,
+  //           },
+  //           {
+  //             'name': 'Mock Drone Batteries',
+  //             'category': 'Spares',
+  //             'stock_available': 35,
+  //           }
+  //         ]);
+
+  //         // Force the total count to update for the UI test
+  //         _totalItemsCount = _inventoryItems.length;
+  //         _isLoading = false;
+  //       });
+  //     }
+  //   }
+  // }
+
   Future<void> _fetchInventory() async {
     setState(() => _isLoading = true);
     try {
-      final dio = Dio(
-        BaseOptions(
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
-        ),
-      );
+      // 1. Seed dummy data (only runs once if DB is empty)
+      await LocalDatabaseHelper.instance.seedDummyData();
 
-      // Fetch stock list and criticality analytics concurrently
-      final responses = await Future.wait([
-        dio.get(ApiConstants.getStocks),
-        dio.get(ApiConstants.getCriticalityCount),
-      ]);
+      // 2. Fetch directly from our local SQLite cache
+      final localData = await LocalDatabaseHelper.instance.getCachedInventory();
 
       if (mounted) {
         setState(() {
-          // 1. Process stocks list
-          if (responses[0].statusCode == 200) {
-            _inventoryItems = responses[0].data['stocks'] ?? [];
-          }
+          _inventoryItems = localData;
+          _totalItemsCount = _inventoryItems.length;
 
-          // 2. Process criticality telemetry count
-          if (responses[1].statusCode == 200 && responses[1].data['success'] == true) {
-            final data = responses[1].data;
-            _totalCriticalItems = data['total_critical_items'] ?? data['critical_count'] ?? 0;
-            _totalItemsCount = data['total_items'] ?? _inventoryItems.length;
-          }
+          // Calculate critical items (stock <= 10)
+          _totalCriticalItems =
+              _inventoryItems
+                  .where((item) => (item['stock_available'] as num) <= 10)
+                  .length;
         });
       }
     } catch (e) {
-      print("Error fetching inventory or criticality data: $e");
+      print("Offline fetch error: $e");
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -86,18 +137,30 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
+    // --- DYNAMIC THEME AWARENESS ---
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final primaryText =
+        Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+    final secondaryText =
+        Theme.of(context).textTheme.bodyMedium?.color ??
+        AppColors.textSecondary;
+    final surfaceColor =
+        Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+    final borderColor =
+        Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+
     final filteredItems =
         _inventoryItems.where((item) {
           final matchesCategory =
               selectedCategory == 'All' || item['category'] == selectedCategory;
           final itemName = (item['name'] ?? '').toString().toLowerCase();
           final matchesSearch = itemName.contains(_searchQuery);
-
           return matchesCategory && matchesSearch;
         }).toList();
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      // backgroundColor removed! Let the Theme engine handle it.
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -108,32 +171,30 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     "Station Inventory",
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: primaryText,
                     ),
                   ),
                   Row(
                     children: [
                       _buildActionButton(
-                        icon: Icons.add_rounded,
-                        color: AppColors.accentCyan,
+                        icon: Icons.add,
+                        color: AppColors.polarCyan,
                         onPressed: () async {
                           final shouldRefresh = await context.push(
                             '/inventory/log',
                           );
-                          if (shouldRefresh == true) {
-                            _fetchInventory();
-                          }
+                          if (shouldRefresh == true) _fetchInventory();
                         },
                       ),
                       const SizedBox(width: 12),
                       _buildActionButton(
-                        icon: Icons.qr_code_scanner_rounded,
-                        color: AppColors.accentMint,
+                        icon: Icons.qr_code_scanner,
+                        color: AppColors.statusNominal,
                         onPressed: () {},
                       ),
                     ],
@@ -142,57 +203,79 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
               ),
               const SizedBox(height: 20),
 
-              // STATS ROW: Dynamically reflects live server telemetry
+              // STATS ROW
               Row(
                 children: [
                   Expanded(
                     child: _buildStatCard(
+                      context: context,
                       title: "Inventory",
-                      value: _totalItemsCount > 0
-                          ? "$_totalItemsCount"
-                          : "${_inventoryItems.length}",
+                      value:
+                          _totalItemsCount > 0
+                              ? "$_totalItemsCount"
+                              : "${_inventoryItems.length}",
                       subtitle: "Total Logged",
-                      topIcon: Icons.category_rounded,
-                      bottomIcon: Icons.trending_up_rounded,
-                      color: AppColors.accentMint,
+                      topIcon: Icons.category,
+                      bottomIcon: Icons.trending_up,
+                      color: AppColors.statusNominal,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildStatCard(
+                      context: context,
                       title: "Alerts",
-                      value: "$_totalCriticalItems", // Live critical count
+                      value: "$_totalCriticalItems",
                       subtitle: "Critical Stock",
-                      topIcon: Icons.warning_rounded,
-                      bottomIcon: Icons.event_note_rounded,
-                      color: AppColors.accentRed,
+                      topIcon: Icons.warning,
+                      bottomIcon: Icons.event_note,
+                      color: AppColors.statusCritical,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
+
+              // THEME-AWARE SEARCH BAR
               TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value.toLowerCase();
-                  });
-                },
+                onChanged:
+                    (value) =>
+                        setState(() => _searchQuery = value.toLowerCase()),
+                style: TextStyle(color: primaryText),
                 decoration: InputDecoration(
                   hintText: "Search supplies...",
-                  hintStyle: const TextStyle(color: AppColors.textSecondary),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.textSecondary,
-                  ),
+                  hintStyle: TextStyle(color: secondaryText),
+                  prefixIcon: Icon(Icons.search, color: secondaryText),
                   filled: true,
-                  fillColor: AppColors.surfaceElevated,
+                  fillColor: surfaceColor,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(
+                      12,
+                    ), // Matched to tactical 12px
+                    borderSide: BorderSide(
+                      color: borderColor,
+                      width: isLight ? 2 : 1,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: borderColor,
+                      width: isLight ? 2 : 1,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.polarCyan,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // THEME-AWARE CATEGORY CHIPS
               SizedBox(
                 height: 40,
                 child: ListView.separated(
@@ -203,6 +286,12 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                   itemBuilder: (context, index) {
                     final category = categories[index];
                     final isSelected = selectedCategory == category;
+
+                    // Brutalist High-Contrast Chip Logic
+                    final chipBg = isSelected ? primaryText : surfaceColor;
+                    final chipText = isSelected ? scaffoldBg : secondaryText;
+                    final chipBorder = isSelected ? primaryText : borderColor;
+
                     return GestureDetector(
                       onTap: () => setState(() => selectedCategory = category),
                       child: Container(
@@ -211,29 +300,24 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              isSelected
-                                  ? AppColors.textPrimary
-                                  : AppColors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(20),
+                          color: chipBg,
+                          borderRadius: BorderRadius.circular(
+                            12,
+                          ), // Matched to tactical 12px
                           border: Border.all(
-                            color:
-                                isSelected
-                                    ? AppColors.textPrimary
-                                    : AppColors.cardBorder,
+                            color: chipBorder,
+                            width: isLight && !isSelected ? 2 : 1,
                           ),
                         ),
                         alignment: Alignment.center,
                         child: Text(
-                          category,
+                          category.toUpperCase(), // Uppercase for tactical feel
                           style: TextStyle(
-                            color:
-                                isSelected
-                                    ? AppColors.background
-                                    : AppColors.textSecondary,
+                            color: chipText,
                             fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
-                            fontSize: 14,
+                                isSelected ? FontWeight.w800 : FontWeight.w600,
+                            fontSize: 13,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
@@ -248,39 +332,18 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                     _isLoading
                         ? const Center(
                           child: CircularProgressIndicator(
-                            color: AppColors.accentMint,
+                            color: AppColors.polarCyan,
                           ),
                         )
                         : filteredItems.isEmpty
-                        ? const Center(
+                        ? Center(
                           child: Text(
                             "No items found",
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: TextStyle(color: secondaryText),
                           ),
                         )
-                        : isDesktop
-                        ? GridView.builder(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                childAspectRatio: 2.5,
-                              ),
-                          itemCount: filteredItems.length,
-                          itemBuilder:
-                              (context, index) => _InventoryItemCard(
-                                itemData: filteredItems[index],
-                                onTap:
-                                    () => context.push(
-                                      '/inventory/details',
-                                      extra: filteredItems[index],
-                                    ),
-                              ),
-                        )
                         : ListView.separated(
-                          padding: const EdgeInsets.only(bottom: 100),
+                          padding: const EdgeInsets.only(bottom: 120),
                           itemCount: filteredItems.length,
                           separatorBuilder:
                               (context, index) => const SizedBox(height: 12),
@@ -304,6 +367,7 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
 }
 
 Widget _buildStatCard({
+  required BuildContext context, // Added context requirement
   required String title,
   required String value,
   required String subtitle,
@@ -311,23 +375,26 @@ Widget _buildStatCard({
   required IconData bottomIcon,
   required Color color,
 }) {
+  final isLight = Theme.of(context).brightness == Brightness.light;
+  final surfaceColor =
+      Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+  final primaryText =
+      Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+  final secondaryText =
+      Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+  final borderColor =
+      Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
+
   return Container(
     height: 150,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: AppColors.surfaceElevated,
-      borderRadius: BorderRadius.circular(32),
+      color: surfaceColor,
+      borderRadius: BorderRadius.circular(12), // Rigid tactical corners
       border: Border.all(
-        color: color.withOpacity(0.15),
-        width: 1.5,
+        color: isLight ? const Color(0xFF000000) : color.withOpacity(0.3),
+        width: isLight ? 2 : 1, // Thick border in High-Albedo mode
       ),
-      boxShadow: [
-        BoxShadow(
-          color: color.withOpacity(0.05),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-        ),
-      ],
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,21 +407,27 @@ Widget _buildStatCard({
             Padding(
               padding: const EdgeInsets.only(top: 8.0, left: 4.0),
               child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: secondaryText,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                shape: BoxShape.circle,
+                color:
+                    isLight ? const Color(0xFF000000) : color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(topIcon, color: color, size: 22),
+              child: Icon(
+                topIcon,
+                color: isLight ? const Color(0xFFFFFFFF) : color,
+                size: 20,
+              ),
             ),
           ],
         ),
@@ -369,10 +442,12 @@ Widget _buildStatCard({
                 children: [
                   Text(
                     value,
-                    style: const TextStyle(
+                    style: TextStyle(
+                      fontFamily:
+                          AppTypography.monoFont, // Telemetry font for numbers
                       fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      color: primaryText,
                       height: 1.1,
                       letterSpacing: -1,
                     ),
@@ -381,9 +456,9 @@ Widget _buildStatCard({
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary.withOpacity(0.7),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: secondaryText,
                     ),
                   ),
                 ],
@@ -393,7 +468,8 @@ Widget _buildStatCard({
               padding: const EdgeInsets.only(bottom: 4.0, right: 4.0),
               child: Icon(
                 bottomIcon,
-                color: color.withOpacity(0.5),
+                color:
+                    isLight ? const Color(0xFF000000) : color.withOpacity(0.5),
                 size: 24,
               ),
             ),
@@ -436,75 +512,75 @@ class _InventoryItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    // Dynamic Tactical Status Logic
+    final double available = (itemData['stock_available'] ?? 0).toDouble();
+    String? statusLabel;
+    Color? statusColor;
+
+    if (available <= 10) {
+      statusLabel = "CRITICAL";
+      statusColor = AppColors.statusCritical;
+    } else if (available <= 50) {
+      statusLabel = "WARNING";
+      statusColor = AppColors.statusWarning;
+    }
+
+    return TacticalCard(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.cardBorder),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.inventory_2_outlined,
-                color: AppColors.accentMint,
-              ),
+      statusLabel: statusLabel,
+      statusColor: statusColor,
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.canvasBlack,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.borderHairline),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    itemData['name'] ?? "Unknown Item",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              color: AppColors.polarCyan,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  itemData['name'] ?? "Unknown Item",
+                  style: AppTypography.headingPrimary.copyWith(fontSize: 16),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      (itemData['category'] ?? "General")
+                          .toString()
+                          .toUpperCase(),
+                      style: AppTypography.label,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        itemData['category'] ?? "General",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
+                    Row(
+                      children: [
+                        const Text("QTY: ", style: AppTypography.label),
+                        Text(
+                          "${itemData['stock_available'] ?? 0}",
+                          style: AppTypography.telemetry,
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: Text(
-                          "Stock: ${itemData['stock_available'] ?? 0}",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.accentCyan,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
