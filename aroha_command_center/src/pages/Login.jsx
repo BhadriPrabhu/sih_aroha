@@ -26,7 +26,7 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 font-sans">
             <div className="max-w-5xl w-full bg-white border border-slate-200 rounded-lg flex overflow-hidden shadow-sm min-h-[600px]">
 
                 {/* Left Side: Tactical SATCOM Visualization */}
@@ -52,24 +52,24 @@ export default function Login() {
                     </div>
 
                     <div className="relative z-10">
-                        <div className="flex items-center gap-2 text-emerald-500 mb-1">
+                        <div className="flex items-center gap-1 text-emerald-500 mb-1">
                             <ShieldCheck size={16} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest">End-to-End Encrypted</span>
+                            <span className="text-[12px] font-semibold">End-to-End Encrypted</span>
                         </div>
                         <p className="text-[10px] text-slate-500 font-mono">SIH26062 • Unauthorized access is strictly prohibited.</p>
                     </div>
                 </div>
 
                 {/* Right Side: Authentication Form */}
-                <div className="w-full lg:w-1/2 p-12 flex flex-col justify-center bg-white">
+                <div className="w-full lg:w-1/2 p-6 sm:p-10 md:p-12 flex flex-col justify-center bg-white">
                     <div className="max-w-md w-full mx-auto">
 
-                        <div className="mb-4">
-                            <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Secure Access</h2>
-                            <p className="text-sm font-medium text-slate-500 tracking-wider">Please authenticate with your operational credentials.</p>
+                        <div className="mb-6 sm:mb-8">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-2">Secure Access</h2>
+                            <p className="text-xs sm:text-sm font-medium text-slate-500 tracking-wider">Please authenticate with your operational credentials.</p>
                         </div>
 
-                        <form onSubmit={handleLogin} className="space-y-5">
+                        <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
                             {/* Role / Clearance Selector */}
                             <div>
                                 <label className="block text-[12px] font-bold text-slate-700 tracking-wider mb-1.5">Clearance Level</label>
