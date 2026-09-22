@@ -26,30 +26,30 @@ export default function EmergencyMonitor() {
       <div className="max-w-[1400px] mx-auto">
 
         {/* Page Header */}
-        <div className="flex justify-between items-end mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Burst Channel Monitor</h1>
-            <p className="text-sm font-medium text-slate-500">High-priority emergency escalation and personnel extraction tracking.</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Burst Channel Monitor</h1>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">High-priority emergency escalation and personnel extraction tracking.</p>
           </div>
-          <div className="flex items-center gap-2 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-md border border-rose-200">
+          <div className="flex items-center self-start sm:self-auto gap-2 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-md border border-rose-200 w-full sm:w-auto justify-center sm:justify-start">
             <Radio size={14} className="animate-pulse" />
             <span className="text-[12px] font-semibold">Burst Channel: Active</span>
           </div>
         </div>
 
         {/* Top KPI Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <KpiCard title="Active Escalations" value="1" subtitle="Requires immediate action" icon={<AlertTriangle size={18} className="text-rose-600" />} alert />
           <KpiCard title="Nearest Response Node" value="Maitri" subtitle="ETA: 4 Hours (Helo)" icon={<Activity size={18} className="text-slate-600" />} />
           <KpiCard title="Personnel at Risk" value="4" subtitle="Field Camp Alpha" icon={<Users size={18} className="text-slate-600" />} />
           <KpiCard title="Avg. Resolution Time" value="11.2" suffix="hrs" subtitle="Historical YTD" icon={<Clock size={18} className="text-slate-600" />} />
         </div>
 
-        {/* Middle Row: Active Emergency Banner (Tactical Dark Slate + Crimson) */}
-        <div className="bg-slate-900 border border-rose-600 border-l-4 rounded-lg p-6 shadow-sm mb-6 flex justify-between items-center gap-4">
+        {/* Middle Row: Active Emergency Banner */}
+        <div className="bg-slate-900 border border-rose-600 border-l-4 rounded-lg p-4 sm:p-6 shadow-sm mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
 
-          <div className="flex gap-5 items-center">
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-md text-rose-500">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start sm:items-center">
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-md text-rose-500 shrink-0">
               {deployState === 'dispatched' ? <Check size={28} className="text-emerald-500" /> : <ShieldAlert size={28} className="animate-pulse" />}
             </div>
             <div>
@@ -59,17 +59,17 @@ export default function EmergencyMonitor() {
                 </span>
                 <span className="text-slate-400 text-xs font-mono font-medium">ID: BURST-2026-092</span>
               </div>
-              <h2 className="text-xl font-bold text-white tracking-tight mb-1">Severe Generator Failure (Code 4)</h2>
-              <p className="text-slate-400 text-sm">Field Camp Alpha (Expedition EXP-2026-03) has lost primary and secondary heating power. Ambient temperature dropping rapidly.</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight mb-1">Severe Generator Failure (Code 4)</h2>
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">Field Camp Alpha (Expedition EXP-2026-03) has lost primary and secondary heating power. Ambient temperature dropping rapidly.</p>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 min-w-[220px]">
+          <div className="flex flex-col gap-2 w-full lg:w-auto lg:min-w-[220px]">
             {/* Interactive Deploy Button */}
             <button
               onClick={handleDeployment}
               disabled={deployState !== 'idle'}
-              className={`w-full px-4 py-2 rounded-md text-sm font-bold shadow-sm transition-colors flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 ${deployState === 'deploying'
+              className={`w-full px-4 py-2.5 sm:py-2 rounded-md text-sm font-bold shadow-sm transition-colors flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 ${deployState === 'deploying'
                 ? 'bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700'
                 : deployState === 'dispatched'
                   ? 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500'
@@ -84,7 +84,7 @@ export default function EmergencyMonitor() {
             <button
               onClick={handleViewRoster}
               disabled={rosterState === 'fetching' || rosterState === 'loaded'}
-              className={`w-full border px-4 py-2 rounded-md text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${rosterState === 'fetching'
+              className={`w-full border px-4 py-2.5 sm:py-2 rounded-md text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${rosterState === 'fetching'
                   ? 'border-slate-700 text-slate-500 cursor-not-allowed'
                   : rosterState === 'loaded'
                     ? 'bg-slate-800 border-slate-700 text-white'
@@ -99,60 +99,62 @@ export default function EmergencyMonitor() {
         </div>
 
         {/* Bottom Row: Emergency Log */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <h3 className="text-lg font-semibold text-slate-900">Historical Emergency Log</h3>
-            <select className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-sky-500">
+            <select className="w-full sm:w-auto text-xs font-medium bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-sky-500">
               <option>Last 30 Days</option>
               <option>Year to Date</option>
             </select>
           </div>
 
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
-                <th className="py-3 px-4 font-semibold rounded-tl-md">Event ID & Date</th>
-                <th className="py-3 px-4 font-semibold">Location</th>
-                <th className="py-3 px-4 font-semibold">Classification</th>
-                <th className="py-3 px-4 font-semibold">Resolution</th>
-                <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Status</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm text-slate-700">
-              <TableRow
-                id="BURST-2026-092" date="Today, 08:14 UTC" location="Field Camp Alpha"
-                classification="Power/Heating Failure" resolution="Awaiting Deployment" status="Active" alert
-              />
-              <TableRow
-                id="BURST-2026-088" date="12 Sep 2026" location="Bharati Station"
-                classification="Medical (Trauma)" resolution="Medevac to Cape Town" status="Resolved"
-              />
-              <TableRow
-                id="BURST-2026-041" date="03 Jul 2026" location="Maitri Station"
-                classification="Comms Blackout" resolution="Secondary SATCOM reboot" status="Resolved"
-              />
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[650px]">
+              <thead>
+                <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                  <th className="py-3 px-4 font-semibold rounded-tl-md">Event ID & Date</th>
+                  <th className="py-3 px-4 font-semibold">Location</th>
+                  <th className="py-3 px-4 font-semibold">Classification</th>
+                  <th className="py-3 px-4 font-semibold">Resolution</th>
+                  <th className="py-3 px-4 font-semibold text-right rounded-tr-md">Status</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm text-slate-700">
+                <TableRow
+                  id="BURST-2026-092" date="Today, 08:14 UTC" location="Field Camp Alpha"
+                  classification="Power/Heating Failure" resolution="Awaiting Deployment" status="Active" alert
+                />
+                <TableRow
+                  id="BURST-2026-088" date="12 Sep 2026" location="Bharati Station"
+                  classification="Medical (Trauma)" resolution="Medevac to Cape Town" status="Resolved"
+                />
+                <TableRow
+                  id="BURST-2026-041" date="03 Jul 2026" location="Maitri Station"
+                  classification="Comms Blackout" resolution="Secondary SATCOM reboot" status="Resolved"
+                />
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </DashboardLayout>
   );
 }
 
-// Sub-components - REFACTORED FOR CRISP GEOMETRY AND MONOTONE ICONS
+// Sub-components
 function KpiCard({ title, value, suffix, subtitle, icon, alert }) {
   return (
-    <div className={`bg-white p-5 rounded-lg border ${alert ? 'border-rose-500 shadow-sm' : 'border-slate-200 shadow-sm'} flex items-start gap-4 relative overflow-hidden`}>
+    <div className={`bg-white p-4 sm:p-5 rounded-lg border ${alert ? 'border-rose-500 shadow-sm' : 'border-slate-200 shadow-sm'} flex items-start gap-3 sm:gap-4 relative overflow-hidden`}>
       {alert && <div className="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>}
-      <div className={`p-2 border rounded-md ${alert ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+      <div className={`p-2 border rounded-md shrink-0 ${alert ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
         {icon}
       </div>
       <div>
-        <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
-        <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
+        <h3 className="text-[12px] font-semibold text-slate-500 mb-1 leading-tight">{title}</h3>
+        <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-none mt-1">
           {value}<span className="text-sm font-medium text-slate-500 ml-1">{suffix}</span>
         </div>
-        {subtitle && <p className="text-[12px] text-slate-400 mt-1 font-medium">{subtitle}</p>}
+        {subtitle && <p className="text-[11px] sm:text-[12px] text-slate-400 mt-1 sm:mt-1.5 font-medium leading-tight">{subtitle}</p>}
       </div>
     </div>
   );
