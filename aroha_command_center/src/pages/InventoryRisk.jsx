@@ -39,15 +39,15 @@ export default function InventoryRisk() {
       <div className="max-w-[1400px] mx-auto">
 
         {/* Page Header */}
-        <div className="flex justify-between items-end mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Inventory & Risk Analysis</h1>
-            <p className="text-sm font-medium text-slate-500">5-factor criticality scoring and demand forecasting evaluation.</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-1">Inventory & Risk Analysis</h1>
+            <p className="text-xs sm:text-sm font-medium text-slate-500">5-factor criticality scoring and demand forecasting evaluation.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button
               onClick={handleExport}
-              className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 flex items-center justify-center gap-2 min-w-[160px]"
+              className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 px-4 py-2.5 sm:py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 flex items-center justify-center gap-2 sm:min-w-[160px]"
             >
               {exportState === 'idle' && <><Download size={14} /> Export Risk Report</>}
               {exportState === 'running' && <><Loader2 size={14} className="animate-spin text-slate-400" /> Generating...</>}
@@ -55,7 +55,7 @@ export default function InventoryRisk() {
             </button>
             <button
               onClick={handleAddStock}
-              className={`px-4 py-2 rounded-md text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center gap-2 min-w-[160px] ${addState === 'success' ? 'bg-emerald-600 text-white focus:ring-emerald-500' : 'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-800'
+              className={`w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-md text-sm font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center gap-2 sm:min-w-[160px] ${addState === 'success' ? 'bg-emerald-600 text-white focus:ring-emerald-500' : 'bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-800'
                 }`}
             >
               {addState === 'idle' && <><Plus size={14} /> Add Manual Stock</>}
@@ -66,7 +66,7 @@ export default function InventoryRisk() {
         </div>
 
         {/* Top KPI Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <KpiCard title="Total Unique Items" value="1,402" icon={<Package size={18} />} />
           <KpiCard title="Items at High Risk" value="24" subtitle="Score > 0.85" icon={<ShieldAlert size={18} className="text-rose-600" />} alert />
           <KpiCard title="Intermittent Demand" value="315" subtitle="Using Croston/SBA" icon={<Activity size={18} />} />
@@ -74,10 +74,10 @@ export default function InventoryRisk() {
         </div>
 
         {/* Middle Row: Stacked Bar Chart for Risk Factors */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200 mb-6 flex flex-col">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-slate-200 mb-6 flex flex-col">
           <div className="mb-6 border-b border-slate-100 pb-4">
-            <h3 className="text-lg font-bold text-slate-900">Criticality Score Breakdown (Top 4 Items)</h3>
-            <p className="text-xs font-medium text-slate-500">Visualizing Urgency, Lead Time, Expedition Impact, and Forecast Uncertainty constraints.</p>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">Criticality Score Breakdown (Top 4 Items)</h3>
+            <p className="text-xs sm:text-sm font-medium text-slate-500">Visualizing Urgency, Lead Time, Expedition Impact, and Forecast Uncertainty constraints.</p>
           </div>
           <div className="w-full h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -99,11 +99,11 @@ export default function InventoryRisk() {
         </div>
 
         {/* Bottom Row: Global Inventory Register */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <h3 className="text-lg font-bold text-slate-900">Global Inventory & Forecasting Register</h3>
-            <div className="flex gap-2">
-              <select className="text-xs font-medium bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-sky-500">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select className="w-full sm:w-auto text-xs font-medium bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 text-slate-700 outline-none focus:ring-1 focus:ring-sky-500">
                 <option>All Stations</option>
                 <option>Bharati Station</option>
                 <option>Maitri Station</option>
@@ -111,35 +111,37 @@ export default function InventoryRisk() {
             </div>
           </div>
 
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
-                <th className="py-3 px-4 font-semibold rounded-tl-md">Item & ID</th>
-                <th className="py-3 px-4 font-semibold">Station</th>
-                <th className="py-3 px-4 font-semibold">Forecast Method</th>
-                <th className="py-3 px-4 font-semibold">Days of Supply</th>
-                <th className="py-3 px-4 font-semibold rounded-tr-md">Criticality</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm text-slate-700">
-              <TableRow
-                name="Winter Diesel Bulk" id="INV-F-092" station="Bharati"
-                method="Exponential Smoothing" dos="4 Days" score="0.94" alert
-              />
-              <TableRow
-                name="Generator Alternator" id="INV-S-114" station="Maitri"
-                method="Croston / SBA" dos="25 Days" score="0.65"
-              />
-              <TableRow
-                name="Amoxicillin (500mg)" id="INV-M-005" station="Bharati"
-                method="Exponential Smoothing" dos="112 Days" score="0.22"
-              />
-              <TableRow
-                name="Ice Core Drill Bits" id="INV-E-044" station="Maitri"
-                method="Croston / SBA" dos="18 Days" score="0.78" alert
-              />
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="text-[12px] font-semibold text-slate-500 border-b border-slate-200 bg-slate-50">
+                  <th className="py-3 px-4 font-semibold rounded-tl-md">Item & ID</th>
+                  <th className="py-3 px-4 font-semibold">Station</th>
+                  <th className="py-3 px-4 font-semibold">Forecast Method</th>
+                  <th className="py-3 px-4 font-semibold">Days of Supply</th>
+                  <th className="py-3 px-4 font-semibold rounded-tr-md">Criticality</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm text-slate-700">
+                <TableRow
+                  name="Winter Diesel Bulk" id="INV-F-092" station="Bharati"
+                  method="Exponential Smoothing" dos="4 Days" score="0.94" alert
+                />
+                <TableRow
+                  name="Generator Alternator" id="INV-S-114" station="Maitri"
+                  method="Croston / SBA" dos="25 Days" score="0.65"
+                />
+                <TableRow
+                  name="Amoxicillin (500mg)" id="INV-M-005" station="Bharati"
+                  method="Exponential Smoothing" dos="112 Days" score="0.22"
+                />
+                <TableRow
+                  name="Ice Core Drill Bits" id="INV-E-044" station="Maitri"
+                  method="Croston / SBA" dos="18 Days" score="0.78" alert
+                />
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </DashboardLayout>
@@ -149,17 +151,17 @@ export default function InventoryRisk() {
 // Sub-components - REFACTORED FOR ENTERPRISE DENSITY
 function KpiCard({ title, value, subtitle, icon, alert }) {
   return (
-    <div className={`bg-white p-5 rounded-lg border ${alert ? 'border-rose-500 shadow-sm' : 'border-slate-200 shadow-sm'} flex items-start gap-4 relative overflow-hidden`}>
+    <div className={`bg-white p-4 sm:p-5 rounded-lg border ${alert ? 'border-rose-500 shadow-sm' : 'border-slate-200 shadow-sm'} flex items-start gap-3 sm:gap-4 relative overflow-hidden`}>
       {alert && <div className="absolute top-0 left-0 w-1 h-full bg-rose-600"></div>}
-      <div className={`p-2 border rounded-md ${alert ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+      <div className={`p-2 border rounded-md shrink-0 ${alert ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
         {icon}
       </div>
       <div>
-        <h3 className="text-[12px] font-semibold text-slate-500 mb-1">{title}</h3>
-        <div className="text-2xl font-bold text-slate-900 tracking-tight leading-none">
+        <h3 className="text-[12px] font-semibold text-slate-500 mb-1 leading-tight">{title}</h3>
+        <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-none mt-1">
           {value}
         </div>
-        {subtitle && <p className="text-[12px] text-slate-400 font-medium">{subtitle}</p>}
+        {subtitle && <p className="text-[11px] sm:text-[12px] text-slate-400 font-medium mt-1.5 leading-tight">{subtitle}</p>}
       </div>
     </div>
   );
@@ -169,21 +171,21 @@ function TableRow({ name, id, station, method, dos, score, alert }) {
   return (
     <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
       <td className="py-3 px-4">
-        <div className="font-semibold text-slate-900">{name}</div>
+        <div className="font-semibold text-slate-900 whitespace-nowrap">{name}</div>
         <div className="font-mono text-[10px] font-medium text-slate-500 mt-0.5 uppercase">{id}</div>
       </td>
-      <td className="py-3 px-4 font-medium text-slate-600">{station}</td>
+      <td className="py-3 px-4 font-medium text-slate-600 whitespace-nowrap">{station}</td>
       <td className="py-3 px-4">
-        <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-700 inline-flex">
-          <TrendingUp size={14} className="text-slate-500" />
+        <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-700 inline-flex whitespace-nowrap">
+          <TrendingUp size={14} className="text-slate-500 shrink-0" />
           {method}
         </div>
       </td>
-      <td className="py-3 px-4 font-medium text-slate-700">{dos}</td>
+      <td className="py-3 px-4 font-medium text-slate-700 whitespace-nowrap">{dos}</td>
       <td className="py-3 px-4">
         <div className="flex items-center gap-2">
-          <span className={`font-mono font-bold ${alert ? 'text-rose-600' : 'text-slate-900'}`}>{score}</span>
-          {alert && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse"></span>}
+          <span className={`font-mono font-bold whitespace-nowrap ${alert ? 'text-rose-600' : 'text-slate-900'}`}>{score}</span>
+          {alert && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse shrink-0"></span>}
         </div>
       </td>
     </tr>
