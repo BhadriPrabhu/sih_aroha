@@ -3,31 +3,45 @@ import { NavLink } from 'react-router-dom';
 import {
     LayoutDashboard, Activity, Anchor, Users, AlertTriangle,
     Settings, Bell, Search, LogOut, ShieldCheck, Radio, CheckCircle2,
-    ShieldAlert
+    ShieldAlert, Menu, X
 } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 
 export default function DashboardLayout({ children }) {
-    // Topbar Interactive States
+    // Topbar & Sidebar Interactive States
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // New Mobile Sidebar State
     const [searchQuery, setSearchQuery] = useState('');
 
     const { user, logout } = useAuthStore();
     const currentRole = user?.role || 'USER';
 
+    // Helper to close sidebar on mobile navigation
+    const closeSidebar = () => setIsSidebarOpen(false);
+
     return (
-        <div className="flex h-screen bg-slate-50 text-slate-900 font-sans">
-            {/* Sidebar - Tactical Slate Theme */}
-            <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-20">
-                <div className="p-5 flex items-center border-b border-slate-800">
-                    {/* <div className="w-8 h-8 bg-sky-600 rounded-md flex items-center justify-center text-white font-bold shadow-sm">
-                        A
-                    </div> */}
+        <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
+            
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/50 z-30 lg:hidden transition-opacity" 
+                    onClick={closeSidebar}
+                />
+            )}
+
+            {/* Sidebar - Tactical Slate Theme (Responsive) */}
+            <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="p-5 flex items-center justify-between border-b border-slate-800">
                     <div>
                         <p className="font-logo font-bold text-3xl text-slate-100 tracking-tight leading-tight">AROHA</p>
                         <p className="font-logo text-[16px] font-medium text-slate-400">NCPOR Central</p>
                     </div>
+                    {/* Mobile Close Button */}
+                    <button className="lg:hidden text-slate-400 hover:text-white focus:outline-none" onClick={closeSidebar}>
+                        <X size={24} />
+                    </button>
                 </div>
 
                 <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
@@ -35,30 +49,30 @@ export default function DashboardLayout({ children }) {
                     {['SUPER_ADMIN', 'ADMIN'].includes(currentRole) && (
                         <>
                             <p className="text-[12px] font-semibold text-slate-500 mb-2 mt-2 px-5">Cross-Station Ops</p>
-                            <NavItem to="/" icon={<LayoutDashboard size={16} />} label="Command Center" exact />
-                            <NavItem to="/cargo" icon={<Anchor size={16} />} label="Cargo & Resupply" />
+                            <NavItem to="/" icon={<LayoutDashboard size={16} />} label="Command Center" exact onClick={closeSidebar} />
+                            <NavItem to="/cargo" icon={<Anchor size={16} />} label="Cargo & Resupply" onClick={closeSidebar} />
                         </>
                     )}
 
                     {['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(currentRole) && (
-                        <NavItem to="/inventory" icon={<Activity size={16} />} label="Inventory & Risk" />
+                        <NavItem to="/inventory" icon={<Activity size={16} />} label="Inventory & Risk" onClick={closeSidebar} />
                     )}
 
                     {['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'].includes(currentRole) && (
                         <>
                             <p className="text-[12px] font-semibold text-slate-500 mt-6 mb-2 px-5">Field Assets</p>
-                            <NavItem to="/expeditions" icon={<Users size={16} />} label="Expeditions" />
+                            <NavItem to="/expeditions" icon={<Users size={16} />} label="Expeditions" onClick={closeSidebar} />
                         </>
                     )}
 
-                    <NavItem to="/alerts" icon={<AlertTriangle size={16} />} label="Burst Channel" alert />
+                    <NavItem to="/alerts" icon={<AlertTriangle size={16} />} label="Burst Channel" alert onClick={closeSidebar} />
 
                     {/* strictly SUPER_ADMIN ONLY */}
                     {currentRole === 'SUPER_ADMIN' && (
                         <>
                             <p className="text-[12px] font-semibold text-slate-500 mt-6 mb-2 px-5">System Administration</p>
-                            <NavItem to="/settings" icon={<Settings size={16} />} label="Recalibration" />
-                            <NavItem to="/access-control" icon={<ShieldAlert size={16} />} label="Access Control" />
+                            <NavItem to="/settings" icon={<Settings size={16} />} label="Recalibration" onClick={closeSidebar} />
+                            <NavItem to="/access-control" icon={<ShieldAlert size={16} />} label="Access Control" onClick={closeSidebar} />
                         </>
                     )}
                 </nav>
@@ -67,21 +81,30 @@ export default function DashboardLayout({ children }) {
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                 {/* Topbar - Structured & Interactive */}
-                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
-                    <div className="text-2xl font-bold text-slate-900 tracking-tight">
-                        Dashboard
+                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        {/* Hamburger Button (Mobile Only) */}
+                        <button 
+                            className="lg:hidden text-slate-500 hover:text-slate-800 focus:outline-none shrink-0" 
+                            onClick={() => setIsSidebarOpen(true)}
+                        >
+                            <Menu size={24} />
+                        </button>
+                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 tracking-tight truncate">
+                            Dashboard
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        {/* Interactive Search */}
-                        <div className="relative">
+                    <div className="flex items-center gap-2 sm:gap-4 ml-2 shrink-0">
+                        {/* Interactive Search (Shrinks on mobile) */}
+                        <div className="relative hidden xs:block">
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search station, item ID..."
-                                className="pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-sky-500 w-64 transition-all focus:bg-white"
+                                placeholder="Search..."
+                                className="pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-sky-500 w-24 sm:w-48 md:w-64 transition-all focus:bg-white"
                             />
                         </div>
 
@@ -98,7 +121,7 @@ export default function DashboardLayout({ children }) {
 
                             {/* Notification Popover Panel */}
                             {isNotifOpen && (
-                                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-md shadow-lg py-2 z-50">
+                                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white border border-slate-200 rounded-md shadow-lg py-2 z-50">
                                     <div className="px-4 pb-2 border-b border-slate-100 flex justify-between items-center">
                                         <h4 className="text-sm font-bold text-slate-900">System Alerts</h4>
                                         <button className="text-[10px] font-semibold text-sky-600 hover:text-sky-700">Clear All</button>
@@ -132,13 +155,13 @@ export default function DashboardLayout({ children }) {
                         <div className="relative">
                             <button
                                 onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotifOpen(false); }}
-                                className={`group flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-md shadow-sm border transition-all focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 ${isProfileOpen ? 'bg-slate-50 border-slate-300' : 'bg-white border-slate-200 hover:bg-slate-50'
+                                className={`group flex items-center gap-2 pl-1.5 pr-1.5 sm:pr-3 py-1 rounded-md shadow-sm border transition-all focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 ${isProfileOpen ? 'bg-slate-50 border-slate-300' : 'bg-white border-slate-200 hover:bg-slate-50'
                                     }`}
                             >
                                 <div className="flex items-center justify-center w-6 h-6 rounded bg-slate-900 text-xs font-bold text-white shadow-sm">
                                     A
                                 </div>
-                                <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">
+                                <span className="hidden sm:block text-xs font-semibold text-slate-700 group-hover:text-slate-900">
                                     Cmdr. Alex
                                 </span>
                             </button>
@@ -166,10 +189,10 @@ export default function DashboardLayout({ children }) {
                         </div>
                     </div>
                 </header>
-
+                
                 {/* Page Content */}
                 <div
-                    className="flex-1 overflow-auto p-6 bg-slate-50"
+                    className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-50"
                     // Close dropdowns if the user clicks anywhere in the main content area
                     onClick={() => { setIsNotifOpen(false); setIsProfileOpen(false); }}
                 >
@@ -181,11 +204,12 @@ export default function DashboardLayout({ children }) {
 }
 
 // Sub-component: NavItem optimized for enterprise density and structure
-function NavItem({ to, icon, label, exact, alert }) {
+function NavItem({ to, icon, label, exact, alert, onClick }) {
     return (
         <NavLink
             to={to}
             end={exact}
+            onClick={onClick} // Triggers closeSidebar on mobile
             className={({ isActive }) => `flex items-center justify-between px-5 py-2.5 text-sm font-medium transition-colors border-l-2 ${isActive
                 ? 'bg-slate-800 border-sky-400 text-white'
                 : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
@@ -210,9 +234,9 @@ function NotificationItem({ icon, title, time, desc, unread }) {
                     {icon}
                 </div>
                 <div>
-                    <div className="flex justify-between items-center gap-4">
+                    <div className="flex justify-between items-center gap-2 sm:gap-4">
                         <h5 className={`text-xs font-bold ${unread ? 'text-slate-900' : 'text-slate-700'}`}>{title}</h5>
-                        <span className="text-[9px] font-medium text-slate-400">{time}</span>
+                        <span className="text-[9px] font-medium text-slate-400 whitespace-nowrap">{time}</span>
                     </div>
                     <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{desc}</p>
                 </div>
