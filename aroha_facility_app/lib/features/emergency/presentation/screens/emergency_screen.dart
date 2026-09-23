@@ -27,7 +27,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
   Future<void> _fetchCriticalAlerts() async {
     setState(() => _isLoadingAlerts = true);
     try {
-      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)));
       final response = await dio.get(ApiConstants.getTopCriticalStocks);
 
       if (response.statusCode == 200 && response.data['success'] == true) {
