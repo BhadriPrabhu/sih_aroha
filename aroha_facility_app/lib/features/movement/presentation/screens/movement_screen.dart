@@ -29,7 +29,7 @@ class _MovementScreenState extends State<MovementScreen> {
 
   Future<void> _fetchTeamsAndInitialMembers() async {
     try {
-      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)));
 
       final responses = await Future.wait([
         dio.get(ApiConstants.getTeams),
@@ -87,7 +87,7 @@ class _MovementScreenState extends State<MovementScreen> {
     });
 
     try {
-      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)));
       final url =
           teamId == 'ALL'
               ? ApiConstants.getMembers

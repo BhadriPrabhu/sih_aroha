@@ -172,7 +172,7 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Station Inventory",
+                    "Inventory",
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
