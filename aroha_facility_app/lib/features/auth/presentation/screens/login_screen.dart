@@ -40,34 +40,59 @@ class _LoginScreenState extends State<LoginScreen> {
       "password": _passwordController.text.trim(),
     };
 
+    Map<String, dynamic>? userData;
+    bool isOfflineMode = false;
+
     try {
-      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
-      final response = await dio.post(ApiConstants.login, data: payload);
-
+      // 1. Attempt Live Server Authentication[cite: 18]
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 3)));
+      
+      // Note: Replace with your actual auth endpoint
+      final response = await dio.post('http://10.40.32.155:8080/api/v1/auth/login', data: payload); 
+      
       if (response.statusCode == 200 && response.data['success'] == true) {
-        // Extract user data
-        final userData = response.data['user'];
-        
-        // Save session locally
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_id', userData['id']);
-        await prefs.setString('user_name', userData['name']);
-        await prefs.setString('user_role', userData['role']);
-        await prefs.setString('station_id', userData['station_id']);
-        await prefs.setBool('is_logged_in', true);
-
-        if (!mounted) return;
-        
-        // Navigate to the main dashboard
-        context.go('/inventory');
-      } else {
-        _showError("Login failed. Please check your credentials.");
+        userData = response.data['user'] as Map<String, dynamic>;
       }
     } catch (e) {
-      _showError("Network Error: Could not connect to station server.");
-      print("Login Error: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      // 2. Offline Fallback (SATCOM Down)
+      print("Live Auth Failed, switching to Offline Cache: $e");
+      isOfflineMode = true;
+      
+      // We simulate the fallback data exactly as you requested[cite: 18]
+      userData = {
+        'id': 'id_12345',
+        'name': payload['name'] ?? 'Test User',
+        'role': 'Admin',
+        'station_id': 'station_maitri',
+      };
+    }
+
+    // 3. Process Authentication Result
+    if (userData != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_id', userData['id']);
+      await prefs.setString('user_name', userData['name']);
+      await prefs.setString('user_role', userData['role']);
+      await prefs.setString('station_id', userData['station_id']);
+      await prefs.setBool('is_logged_in', true);
+
+      if (!mounted) return;
+      
+      if (isOfflineMode) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('SATCOM DOWN: LOGGED IN VIA LOCAL CACHE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+            backgroundColor: AppColors.statusWarning,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+      
+      context.go('/inventory'); // Route to the dashboard[cite: 18]
+    } else {
+      _showError("Login failed. Please check your credentials.");
+      setState(() => _isLoading = false);
     }
   }
 
@@ -76,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: AppColors.accentRed,
+        backgroundColor: AppColors.statusCritical, // Updated to new token[cite: 18]
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -86,6 +111,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- DYNAMIC THEME AWARENESS ---
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final primaryText = Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+    final secondaryText = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+    final surfaceColor = Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+    final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -104,35 +136,41 @@ class _LoginScreenState extends State<LoginScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accentCyan.withOpacity(0.15), 
+                          color: AppColors.polarCyan.withOpacity(isLight ? 0.05 : 0.15), 
                           blurRadius: 30, 
                           spreadRadius: 5,
                         )
                       ],
                     ),
+                    // Keep Lottie if you have the asset, otherwise fallback to Icon
                     child: Lottie.asset(
                       'assets/animations/satellite_globe.json',
                       fit: BoxFit.contain,
                       repeat: true,
                       animate: true,
+                      errorBuilder: (context, error, stackTrace) => Icon(Icons.satellite_alt, size: 80, color: isLight ? Colors.black : AppColors.polarCyan),
                     ),
                   ),
                   const SizedBox(height: 32),
                   
                   // Titles
-                  const Text("AROHA", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, letterSpacing: 2.0, color: AppColors.textPrimary)),
+                  Text("AROHA", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, letterSpacing: 2.0, color: primaryText)),
                   const SizedBox(height: 2),
-                  const Text("Polar Expedition Logistics System", style: TextStyle(fontSize: 14, color: AppColors.accentCyan, letterSpacing: 0.5)),
+                  const Text("Polar Expedition Logistics System", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.polarCyan, letterSpacing: 0.5)), // Added font weight[cite: 18]
                   const SizedBox(height: 48),
 
                   // Name Field
                   TextFormField(
                     controller: _nameController,
-                    style: const TextStyle(color: AppColors.textPrimary),
+                    style: TextStyle(color: primaryText, fontWeight: FontWeight.w600),
                     decoration: _buildInputDecoration(
                       hint: "e.g., Dr. Aarav Sharma",
                       label: "Personnel Name",
                       icon: Icons.person_outline,
+                      surfaceColor: surfaceColor,
+                      borderColor: borderColor,
+                      secondaryText: secondaryText,
+                      isLight: isLight,
                     ),
                     validator: (value) => value == null || value.isEmpty ? "Name is required" : null,
                   ),
@@ -142,37 +180,43 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: const TextStyle(color: AppColors.textPrimary),
+                    style: TextStyle(color: primaryText, fontWeight: FontWeight.w600),
                     decoration: _buildInputDecoration(
                       hint: "Enter your Member ID",
                       label: "Member ID (Password)",
                       icon: Icons.badge_outlined,
+                      surfaceColor: surfaceColor,
+                      borderColor: borderColor,
+                      secondaryText: secondaryText,
+                      isLight: isLight,
                     ).copyWith(
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
+                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: secondaryText),
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                       ),
                     ),
                     validator: (value) => value == null || value.isEmpty ? "Member ID is required" : null,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  // Login Button
+                  // Login Button (Human Factors: 64px height)
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 64, // Increased height for Fitts's Law
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentCyan,
-                        foregroundColor: AppColors.background,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 8,
-                        shadowColor: AppColors.accentCyan.withOpacity(0.3),
+                        backgroundColor: isLight ? Colors.black : AppColors.polarCyan,
+                        foregroundColor: isLight ? Colors.white : Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: isLight ? Colors.black : AppColors.polarCyan.withOpacity(0.5), width: 2),
+                        ),
+                        elevation: 0,
                       ),
                       child: _isLoading
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.background, strokeWidth: 3))
-                          : const Text("LOGIN", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.canvasBlack, strokeWidth: 3))
+                          : const Text("INITIALIZE SYSTEM", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
                     ),
                   ),
                 ],
@@ -184,23 +228,32 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _buildInputDecoration({required String hint, required String label, required IconData icon}) {
+  InputDecoration _buildInputDecoration({
+    required String hint, 
+    required String label, 
+    required IconData icon,
+    required Color surfaceColor,
+    required Color borderColor,
+    required Color secondaryText,
+    required bool isLight,
+  }) {
     return InputDecoration(
       hintText: hint,
       labelText: label,
-      hintStyle: const TextStyle(color: AppColors.textMuted),
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      prefixIcon: Icon(icon, color: AppColors.textSecondary),
+      hintStyle: TextStyle(color: secondaryText.withOpacity(0.5)),
+      labelStyle: TextStyle(color: secondaryText, fontWeight: FontWeight.w600),
+      prefixIcon: Icon(icon, color: secondaryText),
       filled: true,
-      fillColor: AppColors.surfaceElevated,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.accentCyan, width: 1.5)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.accentRed, width: 1.5)),
+      fillColor: surfaceColor,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor, width: isLight ? 2 : 1)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.polarCyan, width: 2)),
+      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.statusCritical, width: 2)),
     );
   }
 }
 
-// Custom Painter for the rotating cryptographic border
+// Custom Painter for the rotating cryptographic border[cite: 18]
 class LoginEncryptionRingPainter extends CustomPainter {
   final Color color;
   LoginEncryptionRingPainter({required this.color});
