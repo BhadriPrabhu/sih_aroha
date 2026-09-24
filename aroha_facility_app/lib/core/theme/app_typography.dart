@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
 class AppTypography {
+  static const String logoFont = 'Fraunces';
   static const String primaryFont = 'Inter';
   static const String monoFont = 'JetBrainsMono';
 

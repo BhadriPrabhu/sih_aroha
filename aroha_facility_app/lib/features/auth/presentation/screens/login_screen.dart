@@ -1,4 +1,5 @@
 // lib/features/auth/presentation/screens/login_screen.dart
+import 'package:aroha_facility_app/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
@@ -17,9 +18,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController(text: "Dr. Aarav Sharma");
-  final TextEditingController _passwordController = TextEditingController(text: "mem-001");
-  
+  final TextEditingController _nameController = TextEditingController(
+    text: "Dr. Aarav Sharma",
+  );
+  final TextEditingController _passwordController = TextEditingController(
+    text: "mem-001",
+  );
+
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -46,10 +51,13 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       // 1. Attempt Live Server Authentication[cite: 18]
       final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 3)));
-      
+
       // Note: Replace with your actual auth endpoint
-      final response = await dio.post('http://10.40.32.155:8080/api/v1/auth/login', data: payload); 
-      
+      final response = await dio.post(
+        'http://10.40.32.155:8080/api/v1/auth/login',
+        data: payload,
+      );
+
       if (response.statusCode == 200 && response.data['success'] == true) {
         userData = response.data['user'] as Map<String, dynamic>;
       }
@@ -57,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // 2. Offline Fallback (SATCOM Down)
       print("Live Auth Failed, switching to Offline Cache: $e");
       isOfflineMode = true;
-      
+
       // We simulate the fallback data exactly as you requested[cite: 18]
       userData = {
         'id': 'id_12345',
@@ -77,18 +85,26 @@ class _LoginScreenState extends State<LoginScreen> {
       await prefs.setBool('is_logged_in', true);
 
       if (!mounted) return;
-      
+
       if (isOfflineMode) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('SATCOM DOWN: LOGGED IN VIA LOCAL CACHE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+            content: const Text(
+              'SATCOM DOWN: LOGGED IN VIA LOCAL CACHE',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
             backgroundColor: AppColors.statusWarning,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
-      
+
       context.go('/inventory'); // Route to the dashboard[cite: 18]
     } else {
       _showError("Login failed. Please check your credentials.");
@@ -100,8 +116,15 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: AppColors.statusCritical, // Updated to new token[cite: 18]
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor:
+            AppColors.statusCritical, // Updated to new token[cite: 18]
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -113,10 +136,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     // --- DYNAMIC THEME AWARENESS ---
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final primaryText = Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
-    final secondaryText = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
-    final surfaceColor = Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
-    final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
+    final primaryText =
+        Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+    final secondaryText =
+        Theme.of(context).textTheme.bodyMedium?.color ??
+        AppColors.textSecondary;
+    final surfaceColor =
+        Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+    final borderColor =
+        Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
 
     return Scaffold(
       body: SafeArea(
@@ -136,10 +164,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.polarCyan.withOpacity(isLight ? 0.05 : 0.15), 
-                          blurRadius: 30, 
+                          color: AppColors.polarCyan.withOpacity(
+                            isLight ? 0.05 : 0.15,
+                          ),
+                          blurRadius: 30,
                           spreadRadius: 5,
-                        )
+                        ),
                       ],
                     ),
                     // Keep Lottie if you have the asset, otherwise fallback to Icon
@@ -148,21 +178,46 @@ class _LoginScreenState extends State<LoginScreen> {
                       fit: BoxFit.contain,
                       repeat: true,
                       animate: true,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.satellite_alt, size: 80, color: isLight ? Colors.black : AppColors.polarCyan),
+                      errorBuilder:
+                          (context, error, stackTrace) => Icon(
+                            Icons.satellite_alt,
+                            size: 80,
+                            color: isLight ? Colors.black : AppColors.polarCyan,
+                          ),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
-                  // Titles
-                  Text("AROHA", style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, letterSpacing: 2.0, color: primaryText)),
+
+                  // Titles (Inside LoginScreen)
+                  Text(
+                    "AROHA",
+                    style: TextStyle(
+                      fontFamily: AppTypography.logoFont, // Applied Fraunces
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2.0,
+                      color: primaryText,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  const Text("Polar Expedition Logistics System", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.polarCyan, letterSpacing: 0.5)), // Added font weight[cite: 18]
+                  Text(
+                    "Polar Expedition Logistics System",
+                    style: AppTypography.label.copyWith(
+                      color: AppColors.polarCyan,
+                      fontSize: 14,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 48),
 
                   // Name Field
                   TextFormField(
                     controller: _nameController,
-                    style: TextStyle(color: primaryText, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontFamily: AppTypography.primaryFont, // Applied Inter
+                      color: primaryText,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: _buildInputDecoration(
                       hint: "e.g., Dr. Aarav Sharma",
                       label: "Personnel Name",
@@ -172,15 +227,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       secondaryText: secondaryText,
                       isLight: isLight,
                     ),
-                    validator: (value) => value == null || value.isEmpty ? "Name is required" : null,
+                    validator:
+                        (value) =>
+                            value == null || value.isEmpty
+                                ? "Name is required"
+                                : null,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   // Password (ID) Field
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: TextStyle(color: primaryText, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontFamily:
+                          AppTypography.monoFont, // Applied JetBrains Mono for passcodes
+                      color: primaryText,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing:
+                          2.0, // Widen the hidden dots/text for readability
+                    ),
                     decoration: _buildInputDecoration(
                       hint: "Enter your Member ID",
                       label: "Member ID (Password)",
@@ -191,32 +257,82 @@ class _LoginScreenState extends State<LoginScreen> {
                       isLight: isLight,
                     ).copyWith(
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: secondaryText),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color:
+                              isLight
+                                  ? secondaryText
+                                  : AppColors.polarCyan.withOpacity(0.7),
+                        ),
+                        onPressed:
+                            () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                       ),
                     ),
-                    validator: (value) => value == null || value.isEmpty ? "Member ID is required" : null,
+                    validator:
+                        (value) =>
+                            value == null || value.isEmpty
+                                ? "Member ID is required"
+                                : null,
                   ),
-                  const SizedBox(height: 32),
-
-                  // Login Button (Human Factors: 64px height)
-                  SizedBox(
+                  const SizedBox(
+                    height: 40,
+                  ), // Increased breathing room before the button
+                  // Login Button (OLED Glowing effect)
+                  Container(
                     width: double.infinity,
-                    height: 64, // Increased height for Fitts's Law
+                    height: 64,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow:
+                          isLight
+                              ? []
+                              : [
+                                BoxShadow(
+                                  color: AppColors.polarCyan.withOpacity(0.25),
+                                  blurRadius: 24,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                    ),
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isLight ? Colors.black : AppColors.polarCyan,
-                        foregroundColor: isLight ? Colors.white : Colors.black,
+                        backgroundColor:
+                            isLight ? Colors.black : AppColors.polarCyan,
+                        foregroundColor:
+                            isLight
+                                ? Colors.white
+                                : AppColors
+                                    .canvasBlack, // Deep black text on bright cyan
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: isLight ? Colors.black : AppColors.polarCyan.withOpacity(0.5), width: 2),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 0,
                       ),
-                      child: _isLoading
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppColors.canvasBlack, strokeWidth: 3))
-                          : const Text("INITIALIZE SYSTEM", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                      child:
+                          _isLoading
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.black,
+                                  strokeWidth: 3,
+                                ),
+                              )
+                              : const Text(
+                                "INITIALIZE SYSTEM",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  // letterSpacing: 1.5,
+                                  fontFamily: AppTypography.primaryFont
+                                ),
+                              ),
                     ),
                   ),
                 ],
@@ -229,26 +345,52 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   InputDecoration _buildInputDecoration({
-    required String hint, 
-    required String label, 
+    required String hint,
+    required String label,
     required IconData icon,
     required Color surfaceColor,
     required Color borderColor,
     required Color secondaryText,
     required bool isLight,
   }) {
+    // OLED pure black fill for dark mode
+    final oledFillColor = isLight ? surfaceColor : Colors.black;
+    final oledBorderColor = isLight ? borderColor : Colors.white24;
+
     return InputDecoration(
       hintText: hint,
       labelText: label,
-      hintStyle: TextStyle(color: secondaryText.withOpacity(0.5)),
-      labelStyle: TextStyle(color: secondaryText, fontWeight: FontWeight.w600),
-      prefixIcon: Icon(icon, color: secondaryText),
+      hintStyle: TextStyle(color: secondaryText.withOpacity(0.4)),
+      labelStyle: TextStyle(
+        color: isLight ? secondaryText : Colors.grey[400],
+        fontWeight: FontWeight.w600,
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: isLight ? secondaryText : AppColors.polarCyan,
+      ),
       filled: true,
-      fillColor: surfaceColor,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor, width: isLight ? 2 : 1)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.polarCyan, width: 2)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.statusCritical, width: 2)),
+      fillColor: oledFillColor,
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 20,
+        horizontal: 16,
+      ), // More luxurious height
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: oledBorderColor, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.polarCyan, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.statusCritical, width: 2),
+      ),
     );
   }
 }
@@ -260,10 +402,11 @@ class LoginEncryptionRingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+    final paint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0;
 
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
