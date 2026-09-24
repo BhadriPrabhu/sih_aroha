@@ -63,6 +63,73 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     context.go('/login');
   }
 
+  Future<void> _confirmLogoutDialog() async {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final surfaceColor = Theme.of(context).cardTheme.color ?? AppColors.surfaceElevated;
+    final primaryText = Theme.of(context).textTheme.titleLarge?.color ?? AppColors.textPrimary;
+    final secondaryText = Theme.of(context).textTheme.bodyMedium?.color ?? AppColors.textSecondary;
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.statusCritical, width: isLight ? 3 : 1.5),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.statusCritical, size: 28),
+            const SizedBox(width: 12),
+            Text("CONFIRM LOGOUT", style: TextStyle(color: primaryText, fontSize: 18, fontWeight: FontWeight.w900)),
+          ],
+        ),
+        content: Text(
+          "Disconnecting will restrict access to live facility telemetry. Offline caches will remain intact. Proceed?",
+          style: TextStyle(color: secondaryText, fontSize: 14, height: 1.5),
+        ),
+        actionsPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 8),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 56, // Fitts's law touch target
+                  child: TextButton(
+                    onPressed: () => context.pop(),
+                    style: TextButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text("CANCEL", style: TextStyle(color: secondaryText, fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      context.pop();
+                      _handleLogout();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.statusCritical,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Text("LOGOUT", style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void _toggleStatus(bool isOutside) {
     if (_isOutsideStation == isOutside) return;
     setState(() {
@@ -351,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   const SizedBox(height: 16),
 
                   // 5. Logout Button
-                  AnimatedHazardButton(onPressed: _handleLogout),
+                  AnimatedHazardButton(onPressed: _confirmLogoutDialog),
                 ],
               ),
             ),
