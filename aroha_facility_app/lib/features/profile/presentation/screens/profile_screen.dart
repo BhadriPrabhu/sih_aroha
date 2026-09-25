@@ -480,7 +480,7 @@ class _AnimatedHazardButtonState extends State<AnimatedHazardButton> with Single
         boxShadow: [BoxShadow(color: AppColors.accentRed.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(10),
         child: Stack(
           children: [
             Container(color: AppColors.surface), // Base Dark
