@@ -1,5 +1,6 @@
 // lib/features/inventory/presentation/screens/log_item_screen.dart
 import 'package:aroha_facility_app/core/constants/api_constants.dart';
+import 'package:aroha_facility_app/core/data/local_database_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
@@ -39,30 +40,38 @@ class _LogItemScreenState extends State<LogItemScreen> {
       setState(() => _isLoading = true);
       
       final payload = {
+        "id": "itm-${DateTime.now().millisecondsSinceEpoch}", // Generate local ID
         "station_id": _stationId,
         "category": _selectedCategory,
         "name": _nameController.text,
         "stock_available": double.tryParse(_stockController.text) ?? 0.0,
+        "criticality_rate": "UNKNOWN" // Default before server analyzes
       };
 
       try {
-        final dio = Dio();
+        // Attempt live server sync 
+        final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 3)));
         final response = await dio.post(ApiConstants.getStocks, data: payload);
         
         if (response.statusCode == 200 || response.statusCode == 201) {
+          await LocalDatabaseHelper.instance.cacheInventory([payload], isSynced: true);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Item successfully logged!'), backgroundColor: AppColors.statusNominal),
+            const SnackBar(content: Text('UPLINK SUCCESSFUL', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)), backgroundColor: AppColors.statusNominal),
           );
-          context.pop(true);
         }
       } catch (e) {
+        // OFFLINE FALLBACK: Save locally as unsynced
+        await LocalDatabaseHelper.instance.cacheInventory([payload], isSynced: false);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.statusCritical),
+          const SnackBar(content: Text('SATCOM DOWN: ITEM QUEUED LOCALLY', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black, letterSpacing: 1.0)), backgroundColor: AppColors.statusWarning),
         );
       } finally {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          context.pop(true); // Return to dashboard
+        }
       }
     }
   }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/data/local_database_helper.dart';
 
 class EmergencyScreen extends StatefulWidget {
   const EmergencyScreen({super.key});
@@ -39,8 +41,33 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
         }
       }
     } catch (e) {
-      print("Error fetching critical alerts: $e");
-      if (mounted) setState(() => _isLoadingAlerts = false);
+      print("Network error, switching to SQLite: $e");
+      
+      // OFFLINE FALLBACK: Fetch directly from local SQLite cache
+      final localInventory = await LocalDatabaseHelper.instance.getCachedInventory();
+      
+      // Filter for items with critically low stock (e.g., <= 15)
+      final criticalItems = localInventory.where((item) => (item['stock_available'] as num) <= 15).toList();
+      
+      // Map local data to the exact format expected by the Emergency UI
+      final mappedAlerts = criticalItems.map((item) {
+        final stock = (item['stock_available'] as num).toDouble();
+        return {
+          'name': item['name'],
+          'criticality_status': stock <= 5 ? 'HIGH' : 'WARNING',
+          'criticality_rate': item['criticality_rate'] ?? 'UNKNOWN',
+          'present_stock': stock,
+          'lead_time_days': 14, // Standard estimated lead time for offline
+          'updated_at': item['updated_at'] ?? DateTime.now().toIso8601String(),
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _criticalAlerts = mappedAlerts;
+          _isLoadingAlerts = false;
+        });
+      }
     }
   }
 
@@ -91,7 +118,6 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
     final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
 
     return Scaffold(
-      // backgroundColor removed!
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,7 +322,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(12), // Tactical 12px
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isLight ? color : color.withOpacity(0.5), 
           width: isLight ? 2 : 1
@@ -329,7 +355,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                     ),
                     Text(
                       time,
-                      style: TextStyle(fontSize: 11, color: secondaryText, fontWeight: FontWeight.bold),
+                      style: AppTypography.telemetry.copyWith(fontSize: 11, color: secondaryText, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),

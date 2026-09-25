@@ -1,8 +1,10 @@
 // lib/features/inventory/presentation/screens/inventory_dashboard_screen.dart
 // import 'package:aroha_facility_app/core/constants/api_constants.dart';
+import 'package:aroha_facility_app/core/constants/api_constants.dart';
 import 'package:aroha_facility_app/core/data/local_database_helper.dart';
 import 'package:aroha_facility_app/core/presentation/widgets/tactical_card.dart';
 import 'package:aroha_facility_app/core/theme/app_typography.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 // import 'package:dio/dio.dart';
@@ -107,27 +109,46 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
 
   Future<void> _fetchInventory() async {
     setState(() => _isLoading = true);
+
+    // 1. Load local cache immediately for zero-latency UI
+    await LocalDatabaseHelper.instance.seedDummyData();
+    var localData = await LocalDatabaseHelper.instance.getCachedInventory();
+    
+    if (mounted) {
+      setState(() {
+        _inventoryItems = localData;
+        _totalItemsCount = _inventoryItems.length;
+        _totalCriticalItems = _inventoryItems.where((item) => (item['stock_available'] as num) <= 10).length;
+      });
+    }
+
+    // 2. Attempt Live Sync in the background
     try {
-      // 1. Seed dummy data (only runs once if DB is empty)
-      await LocalDatabaseHelper.instance.seedDummyData();
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)));
+      final responses = await Future.wait([
+        dio.get(ApiConstants.getStocks),
+        dio.get(ApiConstants.getCriticalityCount),
+      ]);
 
-      // 2. Fetch directly from our local SQLite cache
-      final localData = await LocalDatabaseHelper.instance.getCachedInventory();
-
-      if (mounted) {
-        setState(() {
-          _inventoryItems = localData;
-          _totalItemsCount = _inventoryItems.length;
-
-          // Calculate critical items (stock <= 10)
-          _totalCriticalItems =
-              _inventoryItems
-                  .where((item) => (item['stock_available'] as num) <= 10)
-                  .length;
-        });
+      if (responses[0].statusCode == 200) {
+        final liveData = List.from(responses[0].data['stocks'] ?? []);
+        
+        // Update local DB with fresh server data
+        await LocalDatabaseHelper.instance.cacheInventory(liveData, isSynced: true);
+        
+        // Re-fetch from updated DB
+        localData = await LocalDatabaseHelper.instance.getCachedInventory();
+        
+        if (mounted) {
+          setState(() {
+            _inventoryItems = localData;
+            _totalItemsCount = responses[1].data['total_items'] ?? localData.length;
+            _totalCriticalItems = responses[1].data['total_critical_items'] ?? _inventoryItems.where((item) => (item['stock_available'] as num) <= 10).length;
+          });
+        }
       }
     } catch (e) {
-      print("Offline fetch error: $e");
+      print("SATCOM offline, retaining cached Inventory data.");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
