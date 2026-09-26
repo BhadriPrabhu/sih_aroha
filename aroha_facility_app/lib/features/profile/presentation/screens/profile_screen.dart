@@ -134,23 +134,22 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     if (_isOutsideStation == isOutside) return;
     setState(() {
       _isOutsideStation = isOutside;
-      // Change vitals animation speed based on status (faster when outside)
       _vitalsController.duration = Duration(milliseconds: isOutside ? 600 : 1200);
       _vitalsController.repeat();
     });
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isOutside ? 'Status updated: FIELD MISSION' : 'Status updated: ON STATION',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: isOutside ? AppColors.accentAmber : AppColors.accentMint,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.only(bottom: 120, left: 24, right: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(
+    //     content: Text(
+    //       isOutside ? 'Status updated: Field Mission' : 'Status updated: On Station',
+    //       style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+    //     ),
+    //     backgroundColor: isOutside ? AppColors.accentAmber : AppColors.accentMint,
+    //     behavior: SnackBarBehavior.floating,
+    //     margin: const EdgeInsets.only(bottom: 120, left: 24, right: 24),
+    //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    //   ),
+    // );
   }
 
   @override
@@ -177,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
           
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(left: 24, right: 24, top: 32, bottom: 120),
+              padding: const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -280,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                 onTap: () => _toggleStatus(false),
                                 behavior: HitTestBehavior.opaque,
                                 child: Center(
-                                  child: Text("ON STATION", style: TextStyle(fontWeight: FontWeight.bold, color: !_isOutsideStation ? AppColors.statusNominal : secondaryText)),
+                                  child: Text("On Station", style: TextStyle(fontWeight: FontWeight.bold, color: !_isOutsideStation ? AppColors.statusNominal : secondaryText, fontSize: 16)),
                                 ),
                               ),
                             ),
@@ -289,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                                 onTap: () => _toggleStatus(true),
                                 behavior: HitTestBehavior.opaque,
                                 child: Center(
-                                  child: Text("FIELD MISSION", style: TextStyle(fontWeight: FontWeight.bold, color: _isOutsideStation ? AppColors.statusWarning : secondaryText)),
+                                  child: Text("Field Mission", style: TextStyle(fontWeight: FontWeight.bold, color: _isOutsideStation ? AppColors.statusWarning : secondaryText, fontSize: 16)),
                                 ),
                               ),
                             ),

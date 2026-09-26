@@ -113,7 +113,7 @@ class _MovementScreenState extends State<MovementScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
               child: Text("Personnel Movement", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: primaryText, letterSpacing: -0.5)),
             ),
 
@@ -172,7 +172,7 @@ class _MovementScreenState extends State<MovementScreen> {
 
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: Text("ACTIVE ROSTER", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
+              child: Text("Members", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
             ),
 
             // 2. Member Grid Layer
@@ -216,13 +216,13 @@ class _MovementScreenState extends State<MovementScreen> {
 
     if (activityStatus == 'ON_STATION') {
       statusColor = AppColors.statusNominal;
-      statusText = "ON BASE";
+      statusText = "On Base";
     } else if (activityStatus == 'FIELD_MISSION') {
       statusColor = AppColors.statusWarning;
-      statusText = "IN FIELD";
+      statusText = "In Field";
     } else if (activityStatus == 'MEDICAL_EVAC') {
       statusColor = AppColors.statusCritical;
-      statusText = "EVAC";
+      statusText = "Evac";
     }
 
     return InkWell(
@@ -248,7 +248,7 @@ class _MovementScreenState extends State<MovementScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(4), border: Border.all(color: statusColor.withOpacity(isLight ? 1.0 : 0.5), width: 1.5)),
-              child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+              child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
             ),
           ],
         ),

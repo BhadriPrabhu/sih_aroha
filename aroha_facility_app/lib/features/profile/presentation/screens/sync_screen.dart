@@ -54,7 +54,7 @@ class _SyncScreenState extends State<SyncScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'UPLINK SUCCESSFUL. ALL DATA SYNCED.',
+            'Uplink Successful. All Data Synced.',
             style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
           ),
           backgroundColor: AppColors.statusNominal,
@@ -134,9 +134,9 @@ class _SyncScreenState extends State<SyncScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "SATCOM QUEUE",
+                              "Satcom Queue",
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w900,
                                 color: secondaryText,
                                 letterSpacing: 1.0,
@@ -145,8 +145,8 @@ class _SyncScreenState extends State<SyncScreen> {
                             const SizedBox(height: 4),
                             Text(
                               _unsyncedItems.isEmpty
-                                  ? "ALL DATA SYNCED"
-                                  : "${_unsyncedItems.length} PAYLOADS PENDING",
+                                  ? "All Data Synced"
+                                  : "${_unsyncedItems.length} Payloads Pending",
                               style: AppTypography.telemetry.copyWith(
                                 fontSize: 16,
                                 color: primaryText,
@@ -172,12 +172,12 @@ class _SyncScreenState extends State<SyncScreen> {
                           : _unsyncedItems.isEmpty
                           ? Center(
                             child: Text(
-                              "NO PENDING LOGS",
+                              "No Pending Logs",
                               style: TextStyle(
                                 fontFamily: AppTypography.primaryFont,
                                 color: secondaryText,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: 1.5,
+                                fontSize: 16
                               ),
                             ),
                           )

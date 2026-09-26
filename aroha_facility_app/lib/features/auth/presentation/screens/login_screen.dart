@@ -90,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text(
-              'SATCOM DOWN: LOGGED IN VIA LOCAL CACHE',
+              'Satcom Down: Logged in via Local Cache',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
