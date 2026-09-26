@@ -123,7 +123,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
               child: Text(
                 "Emergency Comms",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: primaryText, letterSpacing: -0.5),
@@ -157,7 +157,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("BURST CHANNEL: STANDBY", style: TextStyle(fontWeight: FontWeight.w800, color: primaryText, fontSize: 13, letterSpacing: 0.5)),
+                        Text("Burst Channel: Standby", style: TextStyle(fontWeight: FontWeight.w800, color: primaryText, fontSize: 14, letterSpacing: 0.5)),
                         const SizedBox(height: 2),
                         Text("SATCOM Link Established", style: TextStyle(fontSize: 12, color: secondaryText, fontWeight: FontWeight.w600)),
                       ],
@@ -168,7 +168,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                 ),
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
 
             // 2. Primary SOS Button Area (High Contrast Drag Target)
             Center(
@@ -195,11 +195,11 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 24),
                       child: Text(
-                        "SLIDE TO TRANSMIT",
+                        "Slide to Transmit",
                         style: TextStyle(
                           color: isLight ? Colors.black54 : secondaryText, 
                           fontWeight: FontWeight.w900, 
-                          letterSpacing: 1.2
+                          fontSize: 16
                         ),
                       ),
                     ),
@@ -331,14 +331,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
+          Icon(icon, color: color, size: 36),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -349,8 +342,8 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                   children: [
                     Expanded(
                       child: Text(
-                        title.toUpperCase(),
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5),
+                        title,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5),
                       ),
                     ),
                     Text(

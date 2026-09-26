@@ -66,7 +66,7 @@ class _CargoOptimizationScreenState extends State<CargoOptimizationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: 8),
               Text("Active Shipments", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: primaryText, letterSpacing: -0.5)),
               const SizedBox(height: 4),
               Text("NCPOR LOGISTICS & TRACKING", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.polarCyan, letterSpacing: 1.0)),

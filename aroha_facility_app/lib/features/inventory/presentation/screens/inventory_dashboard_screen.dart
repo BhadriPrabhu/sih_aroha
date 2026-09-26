@@ -188,7 +188,7 @@ class _InventoryDashboardScreenState extends State<InventoryDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -428,9 +428,9 @@ Widget _buildStatCard({
             Padding(
               padding: const EdgeInsets.only(top: 8.0, left: 4.0),
               child: Text(
-                title.toUpperCase(),
+                title,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: secondaryText,
                   letterSpacing: 0.5,
@@ -539,10 +539,10 @@ class _InventoryItemCard extends StatelessWidget {
     Color? statusColor;
 
     if (available <= 10) {
-      statusLabel = "CRITICAL";
+      statusLabel = "Critical";
       statusColor = AppColors.statusCritical;
     } else if (available <= 50) {
-      statusLabel = "WARNING";
+      statusLabel = "Warning";
       statusColor = AppColors.statusWarning;
     }
 
