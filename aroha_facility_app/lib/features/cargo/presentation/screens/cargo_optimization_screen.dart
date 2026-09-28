@@ -69,17 +69,17 @@ class _CargoOptimizationScreenState extends State<CargoOptimizationScreen> {
               const SizedBox(height: 8),
               Text("Active Shipments", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: primaryText, letterSpacing: -0.5)),
               const SizedBox(height: 4),
-              Text("NCPOR LOGISTICS & TRACKING", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.polarCyan, letterSpacing: 1.0)),
+              Text("NCPOR Logistics & Tracking", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.polarCyan, letterSpacing: 1.0)),
               const SizedBox(height: 24),
               
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("LAST ACTIVITY", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 0.5)),
+                  Text("Last Activity", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 0.5)),
                   TextButton(
                     onPressed: () {},
                     style: TextButton.styleFrom(minimumSize: const Size(48, 48)), // Fitts's Law Failsafe
-                    child: Text("VIEW ALL", style: TextStyle(color: isLight ? Colors.black : AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                    child: Text("View All", style: TextStyle(color: isLight ? Colors.black : AppColors.textSecondary, fontWeight: FontWeight.bold)),
                   )
                 ],
               ),

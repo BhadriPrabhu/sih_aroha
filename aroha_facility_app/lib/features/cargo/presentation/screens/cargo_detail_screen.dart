@@ -353,7 +353,7 @@ class _AnimatedTrackingButtonState extends State<AnimatedTrackingButton> with Si
                       Icon(Icons.radar, color: isLight ? Colors.black : AppColors.statusNominal, size: 24),
                       const SizedBox(width: 12),
                       Text(
-                        "LIVE TRACKING",
+                        "Live Tracking",
                         style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5),
                       ),
                     ],
