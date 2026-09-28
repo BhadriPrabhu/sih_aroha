@@ -189,7 +189,7 @@ class MemberProfileScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("SECURE SATCOM LINK", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
+                          Text("Secure SATCOM Link", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
                           const SizedBox(height: 4),
                           Text(name.toUpperCase(), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primaryText)),
                         ],
@@ -202,10 +202,10 @@ class MemberProfileScreen extends StatelessWidget {
                           border: Border.all(color: isTransmitting ? AppColors.statusCritical : AppColors.statusNominal, width: 1.5),
                         ),
                         child: Text(
-                          isTransmitting ? "TX ACTIVE" : "LINK OPEN", 
+                          isTransmitting ? "TX Active" : "Link Open", 
                           style: TextStyle(
                             color: isTransmitting ? AppColors.statusCritical : AppColors.statusNominal, 
-                            fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.0
+                            fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.0
                           )
                         ),
                       )
