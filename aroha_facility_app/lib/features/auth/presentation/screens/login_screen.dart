@@ -204,11 +204,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     "Polar Expedition Logistics System",
                     style: AppTypography.label.copyWith(
                       color: AppColors.polarCyan,
-                      fontSize: 14,
-                      letterSpacing: 1.5,
+                      fontSize: 16,
+                      // letterSpacing: 1.5,
+                      fontFamily: AppTypography.logoFont
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 40),
 
                   // Name Field
                   TextFormField(
@@ -280,8 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(
                     height: 40,
-                  ), // Increased breathing room before the button
-                  // Login Button (OLED Glowing effect)
+                  ),
                   Container(
                     width: double.infinity,
                     height: 64,
@@ -308,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             isLight
                                 ? Colors.white
                                 : AppColors
-                                    .canvasBlack, // Deep black text on bright cyan
+                                    .canvasBlack,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -325,12 +325,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                               : const Text(
-                                "INITIALIZE SYSTEM",
+                                "Initialize System",
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w900,
-                                  // letterSpacing: 1.5,
-                                  fontFamily: AppTypography.primaryFont
+                                  fontFamily: AppTypography.monoFont
                                 ),
                               ),
                     ),
