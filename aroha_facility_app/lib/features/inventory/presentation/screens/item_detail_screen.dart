@@ -80,7 +80,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text("LOG USAGE: ${itemName.toUpperCase()}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: primaryText)),
+                    Text("Log Usage: $itemName", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: primaryText)),
                     const SizedBox(height: 32),
 
                     Row(
@@ -131,7 +131,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           context.pop(); 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text("STOCK UPDATED. QUEUED FOR UPLINK.", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+                              content: Text("Stock updated. Queued for uplink.", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
                               backgroundColor: AppColors.statusWarning,
                             ),
                           );
@@ -141,7 +141,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           foregroundColor: Colors.black,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                        child: const Text("CONFIRM DEDUCTION", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                        child: const Text("Confirm Deduction", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -175,11 +175,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(color: isLight ? AppColors.canvasBlack : AppColors.statusNominal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
               child: Text(
-                "CATEGORY: ${category.toUpperCase()}",
-                style: TextStyle(color: isLight ? Colors.white : AppColors.statusNominal, fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1.0),
+                "Category: $category",
+                style: TextStyle(color: isLight ? Colors.white : AppColors.statusNominal, fontWeight: FontWeight.w800, fontSize: 14),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
 
             Center(
               child: SizedBox(
@@ -198,7 +198,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text("${(stockPercentage * 100).toInt()}%", style: AppTypography.telemetry.copyWith(fontSize: 40, fontWeight: FontWeight.w900, color: primaryText)),
-                        Text("AVAILABLE", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondaryText, letterSpacing: 1.0)),
+                        Text("Available", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondaryText, letterSpacing: 1.0)),
                       ],
                     ),
                   ],
@@ -210,11 +210,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildMetricColumn("INITIAL", "${initialStock.toInt()}", secondaryText, AppTypography.telemetry.copyWith(color: secondaryText, fontSize: 24, fontWeight: FontWeight.bold)),
+                _buildMetricColumn("Initial", "${initialStock.toInt()}", secondaryText, AppTypography.telemetry.copyWith(color: secondaryText, fontSize: 24, fontWeight: FontWeight.bold)),
                 Container(width: 1, height: 40, color: borderColor),
-                _buildMetricColumn("USED", "${usedStock.toInt()}", secondaryText, AppTypography.telemetry.copyWith(color: AppColors.statusCritical, fontSize: 24, fontWeight: FontWeight.bold)),
+                _buildMetricColumn("Used", "${usedStock.toInt()}", secondaryText, AppTypography.telemetry.copyWith(color: AppColors.statusCritical, fontSize: 24, fontWeight: FontWeight.bold)),
                 Container(width: 1, height: 40, color: borderColor),
-                _buildMetricColumn("CURRENT", "${currentStock.toInt()}", secondaryText, AppTypography.telemetry.copyWith(color: AppColors.polarCyan, fontSize: 24, fontWeight: FontWeight.bold)),
+                _buildMetricColumn("Current", "${currentStock.toInt()}", secondaryText, AppTypography.telemetry.copyWith(color: AppColors.polarCyan, fontSize: 24, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 32),
@@ -223,11 +223,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               children: [
                 Expanded(child: _buildInfoCard("DOS", "14 Days", Icons.calendar_today, surfaceColor, borderColor, primaryText, secondaryText, isLight)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildInfoCard("CRITICALITY", criticality, Icons.warning_amber_rounded, surfaceColor, borderColor, primaryText, secondaryText, isLight)),
+                Expanded(child: _buildInfoCard("Criticality", criticality, Icons.warning_amber_rounded, surfaceColor, borderColor, primaryText, secondaryText, isLight)),
               ],
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity, height: 80,
               child: ElevatedButton(
@@ -277,7 +277,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           const SizedBox(height: 12),
           Text(value, style: AppTypography.telemetry.copyWith(fontSize: 18, fontWeight: FontWeight.bold, color: primaryText)),
           const SizedBox(height: 4),
-          Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: secondaryText, letterSpacing: 0.5)),
+          Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: secondaryText, letterSpacing: 0.5)),
         ],
       ),
     );

@@ -57,20 +57,19 @@ class _LogItemScreenState extends State<LogItemScreen> {
           await LocalDatabaseHelper.instance.cacheInventory([payload], isSynced: true);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('UPLINK SUCCESSFUL', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)), backgroundColor: AppColors.statusNominal),
+            const SnackBar(content: Text('Uplink Successful', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)), backgroundColor: AppColors.statusNominal),
           );
         }
       } catch (e) {
-        // OFFLINE FALLBACK: Save locally as unsynced
         await LocalDatabaseHelper.instance.cacheInventory([payload], isSynced: false);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('SATCOM DOWN: ITEM QUEUED LOCALLY', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black, letterSpacing: 1.0)), backgroundColor: AppColors.statusWarning),
+          const SnackBar(content: Text('SATCOM Down: Item Queued Locally', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black, letterSpacing: 1.0)), backgroundColor: AppColors.statusWarning),
         );
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
-          context.pop(true); // Return to dashboard
+          context.pop(true);
         }
       }
     }
@@ -122,7 +121,7 @@ class _LogItemScreenState extends State<LogItemScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("STATION CONFIGURATION", style: TextStyle(color: secondaryText, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
+                  Text("Station Configuration", style: TextStyle(color: secondaryText, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
@@ -141,14 +140,14 @@ class _LogItemScreenState extends State<LogItemScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(color: AppColors.statusNominal.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-                          child: const Text("ACTIVE", style: TextStyle(color: AppColors.statusNominal, fontSize: 10, fontWeight: FontWeight.bold)),
+                          child: const Text("Active", style: TextStyle(color: AppColors.statusNominal, fontSize: 10, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
 
-                  Text("ITEM DETAILS", style: TextStyle(color: secondaryText, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
+                  Text("Item Details", style: TextStyle(color: secondaryText, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
                   const SizedBox(height: 12),
                   
                   TextFormField(
@@ -198,7 +197,7 @@ class _LogItemScreenState extends State<LogItemScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text("LOG ITEM TO DATABASE", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                      child: const Text("Log item to Database", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: AppTypography.monoFont)),
                     ),
                   ),
                 ],
