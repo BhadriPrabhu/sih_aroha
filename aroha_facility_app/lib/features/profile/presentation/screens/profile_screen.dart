@@ -1,6 +1,7 @@
 // lib/features/profile/presentation/screens/profile_screen.dart
 import 'dart:math';
 import 'dart:ui';
+import 'package:aroha_facility_app/core/theme/app_typography.dart';
 import 'package:aroha_facility_app/core/theme/theme_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -407,8 +408,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           Icon(Icons.sync, color: isLight ? Colors.black : AppColors.polarCyan, size: 28),
                           const SizedBox(width: 12),
                           Text(
-                            "DATA UPLINK & SYNC", 
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.0, color: primaryText)
+                            "Data Uplink & Sync", 
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: primaryText, fontFamily: AppTypography.monoFont)
                           ),
                         ],
                       ),
@@ -496,7 +497,7 @@ class _AnimatedHazardButtonState extends State<AnimatedHazardButton> with Single
                     children: [
                       Icon(Icons.logout, color: AppColors.accentRed, size: 24),
                       SizedBox(width: 12),
-                      Text("LOGOUT", style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                      Text("Logout", style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800, fontFamily: AppTypography.monoFont)),
                     ],
                   ),
                 ),

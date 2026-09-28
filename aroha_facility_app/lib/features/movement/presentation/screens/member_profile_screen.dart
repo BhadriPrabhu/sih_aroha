@@ -264,12 +264,12 @@ class MemberProfileScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            isTransmitting ? "TRANSMITTING..." : "HOLD TO SPEAK",
+                            isTransmitting ? "Transmitting..." : "Hold to Speak",
                             style: TextStyle(
                               color: isTransmitting ? Colors.white : (isLight ? Colors.white : primaryText),
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 1.5,
+                              fontFamily: AppTypography.monoFont
                             ),
                           ),
                         ],

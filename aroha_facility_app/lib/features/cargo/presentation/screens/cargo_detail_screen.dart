@@ -354,7 +354,7 @@ class _AnimatedTrackingButtonState extends State<AnimatedTrackingButton> with Si
                       const SizedBox(width: 12),
                       Text(
                         "Live Tracking",
-                        style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                        style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w900, fontFamily: AppTypography.monoFont),
                       ),
                     ],
                   ),
