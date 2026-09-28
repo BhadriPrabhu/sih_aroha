@@ -55,7 +55,6 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
             ),
             children: [
               TileLayer(
-                // SWITCH BASEMAP BASED ON ALBEDO MODE
                 urlTemplate: isLight 
                     ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
                     : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -125,7 +124,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                     onPressed: () => context.pop(),
                   ),
                   const SizedBox(width: 8),
-                  Text("SATCOM LIVE", style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                  Text("SATCOM Live", style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -134,7 +133,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: AppColors.statusCritical, width: 1.5),
                     ),
-                    child: const Text("LINK ACTIVE", style: TextStyle(color: AppColors.statusCritical, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.0)),
+                    child: const Text("Link Active", style: TextStyle(color: AppColors.statusCritical, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.0)),
                   )
                 ],
               ),
@@ -159,24 +158,24 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("VESSEL: ICE-CLASS RESUPPLY", style: TextStyle(color: primaryText, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.0)),
+                      Text("Vessel: Ice-Class Resupply", style: TextStyle(color: primaryText, fontWeight: FontWeight.w900, fontSize: 14)),
                       Icon(Icons.speed, color: isLight ? Colors.black : AppColors.polarCyan, size: 20),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(child: _buildTelemetryData("LATITUDE", "45° 00' 00\" S", secondaryText, primaryText)),
+                      Expanded(child: _buildTelemetryData("Latitude", "45° 00' 00\" S", secondaryText, primaryText)),
                       Container(width: 1, height: 40, color: borderColor),
-                      Expanded(child: Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildTelemetryData("LONGITUDE", "45° 00' 00\" E", secondaryText, primaryText))),
+                      Expanded(child: Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildTelemetryData("Longitude", "45° 00' 00\" E", secondaryText, primaryText))),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(child: _buildTelemetryData("SPEED", "14.2 KTS", secondaryText, AppColors.polarCyan)),
+                      Expanded(child: _buildTelemetryData("Speed", "14.2 KTS", secondaryText, AppColors.polarCyan)),
                       Container(width: 1, height: 40, color: borderColor),
-                      Expanded(child: Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildTelemetryData("HEADING", "185° S", secondaryText, primaryText))),
+                      Expanded(child: Padding(padding: const EdgeInsets.only(left: 16.0), child: _buildTelemetryData("Heading", "185° S", secondaryText, primaryText))),
                     ],
                   ),
                 ],
@@ -192,7 +191,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen> with SingleTick
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: sText, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+        Text(label, style: TextStyle(color: sText, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
         const SizedBox(height: 4),
         Text(value, style: AppTypography.telemetry.copyWith(color: valColor, fontSize: 16, fontWeight: FontWeight.bold)),
       ],

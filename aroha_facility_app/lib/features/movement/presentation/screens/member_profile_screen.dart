@@ -28,13 +28,13 @@ class MemberProfileScreen extends StatelessWidget {
     
     if (activityStatus == 'ON_STATION') {
       statusColor = AppColors.statusNominal;
-      statusText = "INSIDE BASE";
+      statusText = "Inside Base";
     } else if (activityStatus == 'FIELD_MISSION') {
       statusColor = AppColors.statusWarning;
-      statusText = "IN FIELD";
+      statusText = "In Field";
     } else if (activityStatus == 'MEDICAL_EVAC') {
       statusColor = AppColors.statusCritical;
-      statusText = "EVACUATED";
+      statusText = "Evacuated";
     }
 
     return Scaffold(
@@ -70,37 +70,34 @@ class MemberProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text(name, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: primaryText), textAlign: TextAlign.center),
             const SizedBox(height: 4),
-            Text("${role.toUpperCase()}  •  $teamId", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 0.5), textAlign: TextAlign.center),
+            Text("$role  •  $teamId", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 0.5), textAlign: TextAlign.center),
             const SizedBox(height: 32),
 
             // Emergency Vitals Row
             Row(
               children: [
-                Expanded(child: _buildVitalCard("BLOOD TYPE", "O+", Icons.bloodtype, AppColors.statusCritical, surfaceColor, borderColor, primaryText, secondaryText, isLight)),
+                Expanded(child: _buildVitalCard("Blood type", "O+", Icons.bloodtype, AppColors.statusCritical, surfaceColor, borderColor, primaryText, secondaryText, isLight)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildVitalCard("LOCATION", statusText, Icons.my_location, statusColor, surfaceColor, borderColor, primaryText, secondaryText, isLight)),
+                Expanded(child: _buildVitalCard("Location", statusText, Icons.my_location, statusColor, surfaceColor, borderColor, primaryText, secondaryText, isLight)),
               ],
             ),
             const SizedBox(height: 16),
 
-            // Deep Dive Details
             _buildDetailSection(
-              title: "SYSTEM REGISTRATION",
-              content: "ID: ${memberData['id']}\nUPDATED: ${memberData['updated_at']?.substring(0, 10) ?? 'N/A'}",
+              title: "System Registration",
+              content: "ID: ${memberData['id']}\nUpdated: ${memberData['updated_at']?.substring(0, 10) ?? 'N/A'}",
               icon: Icons.badge_outlined,
               surfaceColor: surfaceColor, borderColor: borderColor, primaryText: primaryText, secondaryText: secondaryText, isLight: isLight
             ),
             const SizedBox(height: 16),
             _buildDetailSection(
-              title: "EMERGENCY CONTACT (BASE)",
+              title: "Emergency Contact (Base)",
               content: "Cmdr. Rajan (Radio Channel 4)\nClearance: Level 2",
               icon: Icons.headset_mic_outlined,
               surfaceColor: surfaceColor, borderColor: borderColor, primaryText: primaryText, secondaryText: secondaryText, isLight: isLight
             ),
             const SizedBox(height: 48),
 
-            // Human Factors: Action Button
-            // Human Factors: Action Button
             SizedBox(
               width: double.infinity,
               height: 64, // Minimum 60px target for gloved interaction
@@ -132,8 +129,8 @@ class MemberProfileScreen extends StatelessWidget {
                     Icon(Icons.radio, color: isLight ? Colors.white : AppColors.polarCyan, size: 24),
                     const SizedBox(width: 12),
                     Text(
-                      "INITIATE RADIO COMMS", 
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1.0, color: isLight ? Colors.white : AppColors.textPrimary)
+                      "Initiate Radio Comms", 
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: isLight ? Colors.white : AppColors.textPrimary, fontFamily: AppTypography.monoFont)
                     ),
                   ],
                 ),
@@ -192,7 +189,7 @@ class MemberProfileScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("SECURE SATCOM LINK", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
+                          Text("Secure SATCOM Link", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
                           const SizedBox(height: 4),
                           Text(name.toUpperCase(), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primaryText)),
                         ],
@@ -205,10 +202,10 @@ class MemberProfileScreen extends StatelessWidget {
                           border: Border.all(color: isTransmitting ? AppColors.statusCritical : AppColors.statusNominal, width: 1.5),
                         ),
                         child: Text(
-                          isTransmitting ? "TX ACTIVE" : "LINK OPEN", 
+                          isTransmitting ? "TX Active" : "Link Open", 
                           style: TextStyle(
                             color: isTransmitting ? AppColors.statusCritical : AppColors.statusNominal, 
-                            fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.0
+                            fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.0
                           )
                         ),
                       )
@@ -301,9 +298,9 @@ class MemberProfileScreen extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 28),
           const SizedBox(height: 12),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: isLight ? Colors.black : color, letterSpacing: 0.5), textAlign: TextAlign.center),
+          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: isLight ? Colors.black : color, letterSpacing: 0.5), textAlign: TextAlign.center),
           const SizedBox(height: 4),
-          Text(title, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: sText, letterSpacing: 1.0)),
+          Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: sText, letterSpacing: 1.0)),
         ],
       ),
     );
@@ -327,7 +324,7 @@ class MemberProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
+                Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 1.0)),
                 const SizedBox(height: 8),
                 Text(content, style: AppTypography.telemetry.copyWith(fontSize: 14, color: primaryText, height: 1.5)),
               ],

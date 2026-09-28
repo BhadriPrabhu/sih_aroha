@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../../../../core/data/local_database_helper.dart';
 
 class EmergencyScreen extends StatefulWidget {
   const EmergencyScreen({super.key});
@@ -27,7 +29,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
   Future<void> _fetchCriticalAlerts() async {
     setState(() => _isLoadingAlerts = true);
     try {
-      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)));
       final response = await dio.get(ApiConstants.getTopCriticalStocks);
 
       if (response.statusCode == 200 && response.data['success'] == true) {
@@ -39,8 +41,33 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
         }
       }
     } catch (e) {
-      print("Error fetching critical alerts: $e");
-      if (mounted) setState(() => _isLoadingAlerts = false);
+      print("Network error, switching to SQLite: $e");
+      
+      // OFFLINE FALLBACK: Fetch directly from local SQLite cache
+      final localInventory = await LocalDatabaseHelper.instance.getCachedInventory();
+      
+      // Filter for items with critically low stock (e.g., <= 15)
+      final criticalItems = localInventory.where((item) => (item['stock_available'] as num) <= 15).toList();
+      
+      // Map local data to the exact format expected by the Emergency UI
+      final mappedAlerts = criticalItems.map((item) {
+        final stock = (item['stock_available'] as num).toDouble();
+        return {
+          'name': item['name'],
+          'criticality_status': stock <= 5 ? 'HIGH' : 'WARNING',
+          'criticality_rate': item['criticality_rate'] ?? 'UNKNOWN',
+          'present_stock': stock,
+          'lead_time_days': 14, // Standard estimated lead time for offline
+          'updated_at': item['updated_at'] ?? DateTime.now().toIso8601String(),
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _criticalAlerts = mappedAlerts;
+          _isLoadingAlerts = false;
+        });
+      }
     }
   }
 
@@ -91,13 +118,12 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
     final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
 
     return Scaffold(
-      // backgroundColor removed!
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
               child: Text(
                 "Emergency Comms",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: primaryText, letterSpacing: -0.5),
@@ -131,7 +157,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("BURST CHANNEL: STANDBY", style: TextStyle(fontWeight: FontWeight.w800, color: primaryText, fontSize: 13, letterSpacing: 0.5)),
+                        Text("Burst Channel: Standby", style: TextStyle(fontWeight: FontWeight.w800, color: primaryText, fontSize: 14, letterSpacing: 0.5)),
                         const SizedBox(height: 2),
                         Text("SATCOM Link Established", style: TextStyle(fontSize: 12, color: secondaryText, fontWeight: FontWeight.w600)),
                       ],
@@ -142,7 +168,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                 ),
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
 
             // 2. Primary SOS Button Area (High Contrast Drag Target)
             Center(
@@ -169,11 +195,11 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 24),
                       child: Text(
-                        "SLIDE TO TRANSMIT",
+                        "Slide to Transmit",
                         style: TextStyle(
                           color: isLight ? Colors.black54 : secondaryText, 
                           fontWeight: FontWeight.w900, 
-                          letterSpacing: 1.2
+                          fontSize: 16
                         ),
                       ),
                     ),
@@ -296,7 +322,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(12), // Tactical 12px
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isLight ? color : color.withOpacity(0.5), 
           width: isLight ? 2 : 1
@@ -305,14 +331,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
+          Icon(icon, color: color, size: 36),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -323,13 +342,13 @@ class _EmergencyScreenState extends State<EmergencyScreen> with SingleTickerProv
                   children: [
                     Expanded(
                       child: Text(
-                        title.toUpperCase(),
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5),
+                        title,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5),
                       ),
                     ),
                     Text(
                       time,
-                      style: TextStyle(fontSize: 11, color: secondaryText, fontWeight: FontWeight.bold),
+                      style: AppTypography.telemetry.copyWith(fontSize: 11, color: secondaryText, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),

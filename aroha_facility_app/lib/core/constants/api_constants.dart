@@ -16,4 +16,6 @@ class ApiConstants {
   static String getTeamMembers(String teamId) => '$baseUrl/teams/$teamId/members';
 
   static String get getTopCriticalStocks => '$baseUrl/stocks/top-critical';
+
+  static String get getShipments => '$baseUrl/shipments';
 }

@@ -42,7 +42,7 @@ class TacticalCard extends StatelessWidget {
                 top: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(
                     color: statusColor!.withOpacity(0.12),
                     borderRadius: const BorderRadius.only(
@@ -64,8 +64,8 @@ class TacticalCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        statusLabel!.toUpperCase(),
-                        style: AppTypography.label.copyWith(color: statusColor),
+                        statusLabel!,
+                        style: AppTypography.label.copyWith(color: statusColor, fontSize: 12),
                       ),
                     ],
                   ),

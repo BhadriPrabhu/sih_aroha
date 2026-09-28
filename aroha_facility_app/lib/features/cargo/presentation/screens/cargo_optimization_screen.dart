@@ -1,11 +1,54 @@
 // lib/features/cargo/presentation/screens/cargo_optimization_screen.dart
+import 'package:aroha_facility_app/core/constants/api_constants.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/data/local_database_helper.dart';
 
-class CargoOptimizationScreen extends StatelessWidget {
+class CargoOptimizationScreen extends StatefulWidget {
   const CargoOptimizationScreen({super.key});
+
+  @override
+  State<CargoOptimizationScreen> createState() => _CargoOptimizationScreenState();
+}
+
+class _CargoOptimizationScreenState extends State<CargoOptimizationScreen> {
+  List<Map<String, dynamic>> _shipments = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchShipments();
+  }
+
+  Future<void> _fetchShipments() async {
+    setState(() => _isLoading = true);
+    
+    // 1. Seed & Load Cache immediately
+    await LocalDatabaseHelper.instance.seedCargoData();
+    var localData = await LocalDatabaseHelper.instance.getCachedShipments();
+    if (mounted) setState(() => _shipments = localData);
+
+    // 2. Attempt Live Sync
+    try {
+      final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 2)));
+      // Note: Replace URL with your actual cargo endpoint when the server is ready
+      final response = await dio.get(ApiConstants.getShipments); 
+      
+      if (response.statusCode == 200) {
+        if (mounted) {
+          setState(() => _shipments = response.data['shipments'] ?? localData);
+        }
+      }
+    } catch (e) {
+      print("SATCOM offline, retaining cached Cargo data.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,59 +60,66 @@ class CargoOptimizationScreen extends StatelessWidget {
     final borderColor = Theme.of(context).dividerTheme.color ?? AppColors.cardBorder;
 
     return Scaffold(
-      // backgroundColor removed for theme awareness
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: 8),
               Text("Active Shipments", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: primaryText, letterSpacing: -0.5)),
               const SizedBox(height: 4),
-              Text("NCPOR LOGISTICS & TRACKING", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.polarCyan, letterSpacing: 1.0)),
+              Text("NCPOR Logistics & Tracking", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.polarCyan, letterSpacing: 1.0)),
               const SizedBox(height: 24),
               
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("LAST ACTIVITY", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 0.5)),
+                  Text("Last Activity", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: secondaryText, letterSpacing: 0.5)),
                   TextButton(
                     onPressed: () {},
                     style: TextButton.styleFrom(minimumSize: const Size(48, 48)), // Fitts's Law Failsafe
-                    child: Text("VIEW ALL", style: TextStyle(color: isLight ? Colors.black : AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                    child: Text("View All", style: TextStyle(color: isLight ? Colors.black : AppColors.textSecondary, fontWeight: FontWeight.bold)),
                   )
                 ],
               ),
               const SizedBox(height: 8),
               
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.only(bottom: 120),
-                  children: [
-                    _buildShipmentCard(
-                      context: context,
-                      title: "Ice-Class Vessel Resupply",
-                      route: "Goa, IND → Bharati, ANT",
-                      id: "SHP-8942",
-                      status: "AT PORT",
-                      statusColor: AppColors.statusWarning,
-                      icon: Icons.directions_boat_filled_outlined,
-                      isLight: isLight, surface: surfaceColor, border: borderColor, pText: primaryText, sText: secondaryText,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildShipmentCard(
-                      context: context,
-                      title: "Emergency Airlift Alpha",
-                      route: "Cape Town, SA → Maitri, ANT",
-                      id: "AIR-1109",
-                      status: "DELIVERED",
-                      statusColor: AppColors.statusNominal,
-                      icon: Icons.airplanemode_active,
-                      isLight: isLight, surface: surfaceColor, border: borderColor, pText: primaryText, sText: secondaryText,
-                    ),
-                  ],
-                ),
+                child: _isLoading 
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.polarCyan))
+                  : _shipments.isEmpty
+                    ? Center(child: Text("NO ACTIVE SHIPMENTS", style: TextStyle(color: secondaryText, fontWeight: FontWeight.w800)))
+                    : ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 120),
+                        itemCount: _shipments.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          final shipment = _shipments[index];
+                          
+                          // Dynamic UI Mapping
+                          final isAir = shipment['id'].toString().startsWith('AIR');
+                          final icon = isAir ? Icons.airplanemode_active : Icons.directions_boat_filled_outlined;
+                          final statusColor = shipment['status'] == 'DELIVERED' 
+                              ? AppColors.statusNominal 
+                              : AppColors.statusWarning;
+
+                          return _buildShipmentCard(
+                            context: context,
+                            title: shipment['title'] ?? 'Unknown Cargo',
+                            route: shipment['route'] ?? 'Unknown Route',
+                            id: shipment['id'] ?? 'ID-UNKNOWN',
+                            status: shipment['status'] ?? 'PENDING',
+                            statusColor: statusColor,
+                            icon: icon,
+                            isLight: isLight, 
+                            surface: surfaceColor, 
+                            border: borderColor, 
+                            pText: primaryText, 
+                            sText: secondaryText,
+                          );
+                        },
+                      ),
               )
             ],
           ),
@@ -86,7 +136,7 @@ class CargoOptimizationScreen extends StatelessWidget {
   }) {
     return InkWell(
       onTap: () => context.push('/cargo/details'),
-      borderRadius: BorderRadius.circular(12), // Tactical corners
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -97,7 +147,7 @@ class CargoOptimizationScreen extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 64, height: 64, // 64dp for heavy gloves
+              width: 64, height: 64,
               decoration: BoxDecoration(
                 color: isLight ? Colors.white : AppColors.canvasBlack,
                 borderRadius: BorderRadius.circular(8),

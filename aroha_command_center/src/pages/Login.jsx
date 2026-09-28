@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, User, Lock, Loader2 } from 'lucide-react';
+import { ShieldCheck, User, Lock, Loader2, Key, Activity } from 'lucide-react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import useAuthStore from '../store/useAuthStore';
 
@@ -11,6 +11,7 @@ export default function Login() {
     const [authStatus, setAuthStatus] = useState('idle');
     const [role, setRole] = useState('SUPER_ADMIN');
     const [operatorId, setOperatorId] = useState('');
+    const [password, setPassword] = useState(''); // Added controlled password state
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -20,9 +21,16 @@ export default function Login() {
         setTimeout(() => {
             setAuthStatus('idle');
             // Execute the context login to set global state
-            login(operatorId || 'cmdr.alex@ncpor.res.in', role);
+            login(operatorId || 'director@ncpor.res.in', role);
             navigate('/');
         }, 1800);
+    };
+
+    // Auto-fill helper for demo reviewers
+    const handleDemoFill = (demoRole, demoId, demoPass) => {
+        setRole(demoRole);
+        setOperatorId(demoId);
+        setPassword(demoPass);
     };
 
     return (
@@ -52,9 +60,9 @@ export default function Login() {
                     </div>
 
                     <div className="relative z-10">
-                        <div className="flex items-center gap-1 text-emerald-500 mb-1">
+                        <div className="flex items-center gap-2 text-emerald-500 mb-1">
                             <ShieldCheck size={16} />
-                            <span className="text-[12px] font-semibold">End-to-End Encrypted</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">End-to-End Encrypted</span>
                         </div>
                         <p className="text-[10px] text-slate-500 font-mono">SIH26062 • Unauthorized access is strictly prohibited.</p>
                     </div>
@@ -72,7 +80,7 @@ export default function Login() {
                         <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
                             {/* Role / Clearance Selector */}
                             <div>
-                                <label className="block text-[12px] font-bold text-slate-700 tracking-wider mb-1.5">Clearance Level</label>
+                                <label className="block text-[12px] font-bold text-slate-700 tracking-wider mb-1.5 uppercase">Clearance Level</label>
                                 <select
                                     value={role}
                                     onChange={(e) => setRole(e.target.value)}
@@ -87,7 +95,7 @@ export default function Login() {
 
                             {/* Operator ID */}
                             <div>
-                                <label className="block text-[12px] font-bold text-slate-700 tracking-wider mb-1.5">Operator ID / Email</label>
+                                <label className="block text-[12px] font-bold text-slate-700 tracking-wider mb-1.5 uppercase">Operator ID / Email</label>
                                 <div className="relative">
                                     <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
@@ -103,12 +111,14 @@ export default function Login() {
 
                             {/* Access Key */}
                             <div>
-                                <label className="block text-[12px] font-bold text-slate-700 tracking-wider mb-1.5">Access Key</label>
+                                <label className="block text-[12px] font-bold text-slate-700 tracking-wider mb-1.5 uppercase">Access Key</label>
                                 <div className="relative">
                                     <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
                                         type="password"
                                         required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••••••"
                                         className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-md pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all"
                                     />
@@ -131,6 +141,37 @@ export default function Login() {
                                 )}
                             </button>
                         </form>
+
+                        {/* Demo Access Helper */}
+                        <div className="mt-4 pt-6 border-t border-slate-100">
+                            <p className="text-[16px] font-semibold text-slate-400 text-center">Demo Evaluation Access</p>
+                            <p className="text-[12px] font-medium text-slate-400 mb-3 text-center">Click below to auto-fill text fields</p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleDemoFill('SUPER_ADMIN', 'director@ncpor.res.in', 'aroha-root-2026')}
+                                    className="flex-1 flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <ShieldCheck size={14} className="text-rose-600" />
+                                        <span>Super Admin</span>
+                                    </div>
+                                    <Key size={12} className="text-slate-400" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleDemoFill('MANAGER', 'cmdr.alex@ncpor.res.in', 'station-bha-2026')}
+                                    className="flex-1 flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Activity size={14} className="text-sky-600" />
+                                        <span>Manager</span>
+                                    </div>
+                                    <Key size={12} className="text-slate-400" />
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>

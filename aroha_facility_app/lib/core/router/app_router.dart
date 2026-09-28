@@ -22,7 +22,7 @@ final GlobalKey<NavigatorState> _shellNavigatorKey =
 GoRouter createRouter(String initialRole) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/inventory',
+    initialLocation: '/login',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       ShellRoute(
