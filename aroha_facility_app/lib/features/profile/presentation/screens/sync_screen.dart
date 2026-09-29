@@ -254,7 +254,7 @@ class _SyncScreenState extends State<SyncScreen> {
                               : _simulateUplink,
                       child: Container(
                         width: double.infinity,
-                        height: 80,
+                        height: 64,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(40),
                           border: Border.all(
@@ -288,7 +288,7 @@ class _SyncScreenState extends State<SyncScreen> {
                                       "Syncing...",
                                       style: TextStyle(
                                         fontFamily: AppTypography.primaryFont,
-                                        fontSize: 22,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w700,
                                         color:
                                             isLight
@@ -305,7 +305,7 @@ class _SyncScreenState extends State<SyncScreen> {
                                       "Sync Now",
                                       style: TextStyle(
                                         fontFamily: AppTypography.monoFont,
-                                        fontSize: 20,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w700,
                                         color:
                                             _unsyncedItems.isEmpty
@@ -318,7 +318,7 @@ class _SyncScreenState extends State<SyncScreen> {
                                     const SizedBox(width: 12),
                                     Icon(
                                       Icons.sync,
-                                      size: 32,
+                                      size: 24,
                                       color:
                                           _unsyncedItems.isEmpty
                                               ? secondaryText

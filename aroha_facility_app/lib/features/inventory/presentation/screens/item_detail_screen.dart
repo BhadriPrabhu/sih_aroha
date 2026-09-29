@@ -120,7 +120,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
                     SizedBox(
                       width: double.infinity,
-                      height: 80,
+                      height: 64,
                       child: ElevatedButton(
                         onPressed: () async {
                           await LocalDatabaseHelper.instance.consumeStock(itemId, usageCount);
@@ -141,7 +141,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           foregroundColor: Colors.black,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
-                        child: const Text("Confirm Deduction", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                        child: const Text("Confirm Deduction", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: AppTypography.monoFont)),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -229,7 +229,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
             const SizedBox(height: 24),
             SizedBox(
-              width: double.infinity, height: 80,
+              width: double.infinity, height: 64,
               child: ElevatedButton(
                 onPressed: () {
                   final itemId = _liveItemData['id']?.toString() ?? _liveItemData['name'];
@@ -245,7 +245,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   children: [
                     Icon(Icons.output_rounded, size: 28, color: Colors.black),
                     SizedBox(width: 12),
-                    Text("Checkout Item", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, fontFamily: AppTypography.monoFont)),
+                    Text("Checkout Item", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: AppTypography.monoFont)),
                   ],
                 ),
               ),
