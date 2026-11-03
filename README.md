@@ -11,6 +11,38 @@
 ## The Mission
 AROHA is a three-tier, offline-first logistics intelligence platform designed for the unforgiving logistics environment of India’s Antarctic research stations. Built for Maitri, Bharati and Himadri, it enables teams to anticipate demand, quantify supply risk, and optimize every kilogram of cargo under severe connectivity, weather, and payload constraints. Through a deterministic operations-research pipeline, AROHA transforms uncertainty into actionable resupply decisions, helping ensure that the right resources arrive, in the right quantities, before they are needed.
 
+## System Architecture
+
+```mermaid
+graph TD
+    subgraph Facility["Facility Tier — Research Station"]
+        APP([Facility App<br/>Flutter + Dio])
+        APPDB[(Mobile Cache<br/>SQLite + sqflite)]
+        FAC[Facility API and Operations Engine<br/>C++20 + Drogon]
+        FACDB[(Facility Data Store<br/>SQLite)]
+    end
+
+    subgraph Analytics["Analytics Service"]
+        ANALYTICS[Analytics API<br/>Python + FastAPI + NumPy/SciPy]
+    end
+
+    subgraph Mainland["Remote Tier — Mainland / NCPOR"]
+        WEB([Command Center Dashboard<br/>React 19 + Vite])
+        REMOTE[Remote API and Sync Service<br/>Java 17 + Spring Boot]
+        MYSQL[(Central Data Store<br/>MySQL + Spring Data JPA)]
+    end
+
+    APP -->|HTTP/JSON over station LAN| FAC
+    APP -->|Direct local database access| APPDB
+    FAC -->|SQLite file I/O| FACDB
+    FAC -->|HTTP/JSON: forecast and criticality| ANALYTICS
+    FAC -->|HTTP/JSON: batched delta sync| REMOTE
+    REMOTE -->|HTTP/JSON: fetch station records| FAC
+    REMOTE -->|JDBC/TCP| MYSQL
+```
+
+The React command-center UI is present as a frontend, but the current source does not configure API calls from it to the remote service.
+
 ## Core Mathematical Pipeline
 Our system features three integrated C++ modules operating natively on-station:
 
